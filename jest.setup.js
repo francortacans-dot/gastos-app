@@ -23,3 +23,12 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
   default: {},
 }));
+
+// El mock automático de jest-expo para expo-crypto devuelve randomUUID() = undefined
+// (ver node_modules/expo-crypto/mocks/ExpoCrypto.ts), así que lo pisamos acá con la
+// implementación real de Node para que los repos que generan ids con Crypto.randomUUID()
+// tengan ids reales y únicos en los tests.
+jest.mock('expo-crypto', () => ({
+  __esModule: true,
+  randomUUID: () => require('node:crypto').randomUUID(),
+}));
