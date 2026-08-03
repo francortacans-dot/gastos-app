@@ -168,4 +168,48 @@ describe('calcularResumenMes', () => {
     expect(resumen.presupuestoDelMes).toBe(0);
     expect(resumen.disponible).toBe(0);
   });
+
+  // Decisión de producto deliberada (no un efecto colateral accidental):
+  // si un mes se pasa del presupuesto, el déficit se "perdona" y no se
+  // arrastra como saldo negativo al mes siguiente (Math.max(0, ...) en
+  // calcularResumenMes). El mes que se pasó SÍ puede mostrar su propio
+  // `disponible` negativo; lo que no ocurre es que ese negativo reste del
+  // presupuesto del mes siguiente.
+  it('si un mes se pasó del presupuesto, el déficit no se arrastra al mes siguiente (se perdona)', () => {
+    const presupuestos: Budget[] = [
+      { mes: '2026-05', totalCentavos: 50000 },
+      { mes: '2026-06', totalCentavos: 100000 },
+    ];
+    // en mayo se gastaron 80000 de un presupuesto de 50000: disponible de mayo = -30000
+    const gastos: Expense[] = [
+      gasto({ id: 'may', centavosArs: 80000, fecha: '2026-05-10' }),
+      gasto({ id: 'jun', centavosArs: 10000, fecha: '2026-06-05' }),
+    ];
+
+    const resumenJunio = calcularResumenMes({
+      mes: '2026-06',
+      presupuestos,
+      gastos,
+      ahorros: [],
+    });
+
+    // el acumuladoPrevio se pisa en 0 en vez de ser -30000
+    expect(resumenJunio.acumuladoPrevio).toBe(0);
+    expect(resumenJunio.disponible).toBe(100000 + 0 - 10000);
+  });
+
+  it('un mes que se pasó del presupuesto puede tener disponible negativo en su propio resumen', () => {
+    const presupuestos: Budget[] = [{ mes: '2026-05', totalCentavos: 50000 }];
+    const gastos: Expense[] = [gasto({ id: 'may', centavosArs: 80000, fecha: '2026-05-10' })];
+
+    const resumenMayo = calcularResumenMes({
+      mes: '2026-05',
+      presupuestos,
+      gastos,
+      ahorros: [],
+    });
+
+    // el propio mes SÍ refleja el rojo: acá no hay Math.max de por medio
+    expect(resumenMayo.disponible).toBe(-30000);
+  });
 });
