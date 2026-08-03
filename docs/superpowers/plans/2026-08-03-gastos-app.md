@@ -157,6 +157,7 @@ web-build/
 *.log
 src-tauri/target/
 .DS_Store
+.superpowers/
 ```
 
 `.env.example`:
