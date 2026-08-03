@@ -2,6 +2,16 @@ import { crearExpenseRepo } from '../expense-repo';
 import type { LocalStore, PendingWrite } from '../../db/local-store';
 import type { Expense } from '../../domain/types';
 
+// El mock automático de jest-expo para expo-crypto devuelve randomUUID() = undefined
+// (ver node_modules/expo-crypto/mocks/ExpoCrypto.ts), así que lo pisamos acá con la
+// implementación real de Node para que este repo, que genera ids con Crypto.randomUUID(),
+// tenga ids reales y únicos en los tests. Mock local (no global) para no afectar otros
+// tests que necesiten el resto de las exports de expo-crypto.
+jest.mock('expo-crypto', () => ({
+  __esModule: true,
+  randomUUID: () => require('node:crypto').randomUUID(),
+}));
+
 function crearStoreFake(): LocalStore & { pendientes: PendingWrite[] } {
   const pendientes: PendingWrite[] = [];
   const snapshots: Record<string, unknown[]> = { expenses: [] };
