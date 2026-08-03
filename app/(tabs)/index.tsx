@@ -13,6 +13,7 @@ import { SectorProgress } from '../../src/components/sector-progress';
 import { MoneyText } from '../../src/components/money-text';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
+import { useEsEscritorio } from '../../src/hooks/use-es-escritorio';
 
 export default function Home() {
   const router = useRouter();
@@ -22,12 +23,58 @@ export default function Home() {
   const gastos = useGastos();
   const preferencias = usePreferences();
   const cotizacion = useCotizacionActual(preferencias.cotizacionPreferida);
+  const esEscritorio = useEsEscritorio();
 
   const gastoPorSector = gastadoPorSector(gastos, mes);
   const porciones = [
     ...sectores.map((s) => ({ etiqueta: s.nombre, valor: gastoPorSector.get(s.id) ?? 0, color: s.color })),
     { etiqueta: 'Sin sector', valor: gastoPorSector.get(SIN_SECTOR) ?? 0, color: colors.text4 },
   ].filter((p) => p.valor > 0);
+
+  if (esEscritorio) {
+    return (
+      <View style={estilos.contenedorEscritorio}>
+        <ScrollView style={estilos.columnaIzquierda} contentContainerStyle={estilos.contenido}>
+          <View style={estilos.filaMoneda}>
+            <Pressable onPress={() => preferencias.setMonedaVisualizacion('ARS')}>
+              <Text style={[estilos.toggle, preferencias.monedaVisualizacion === 'ARS' && estilos.toggleActivo]}>ARS</Text>
+            </Pressable>
+            <Pressable onPress={() => preferencias.setMonedaVisualizacion('USD')}>
+              <Text style={[estilos.toggle, preferencias.monedaVisualizacion === 'USD' && estilos.toggleActivo]}>USD</Text>
+            </Pressable>
+          </View>
+          <View style={estilos.tarjetaResumen}>
+            <Text style={estilos.etiqueta}>Disponible este mes</Text>
+            <MoneyText centavos={resumen.disponible} moneda={preferencias.monedaVisualizacion} cotizacion={cotizacion?.venta} style={estilos.montoGrande} />
+            <View style={estilos.filaDetalle}>
+              <Text style={estilos.detalle}>
+                Presupuesto: <MoneyText centavos={resumen.presupuestoDelMes} moneda={preferencias.monedaVisualizacion} cotizacion={cotizacion?.venta} />
+              </Text>
+              <Text style={estilos.detalle}>
+                Gastado: <MoneyText centavos={resumen.gastado} moneda={preferencias.monedaVisualizacion} cotizacion={cotizacion?.venta} />
+              </Text>
+            </View>
+          </View>
+          {porciones.length > 0 && (
+            <View style={estilos.centrado}>
+              <PieChart porciones={porciones} size={260} />
+            </View>
+          )}
+        </ScrollView>
+        <ScrollView style={estilos.columnaDerecha} contentContainerStyle={estilos.contenido}>
+          <Text style={estilos.seccionTitulo}>Sectores</Text>
+          <View style={estilos.seccion}>
+            {sectores.map((s) => (
+              <SectorProgress key={s.id} nombre={s.nombre} color={s.color} gastado={gastoPorSector.get(s.id) ?? 0} limite={s.limiteMensual} />
+            ))}
+          </View>
+        </ScrollView>
+        <Pressable style={estilos.botonFlotante} onPress={() => router.push('/gasto-nuevo')}>
+          <Text style={estilos.textoBotonFlotante}>+</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
@@ -112,4 +159,8 @@ const estilos = StyleSheet.create({
     elevation: 4,
   },
   textoBotonFlotante: { color: colors.surface, fontSize: 28, lineHeight: 30 },
+  contenedorEscritorio: { flex: 1, flexDirection: 'row', backgroundColor: colors.bg },
+  columnaIzquierda: { flex: 1, borderRightWidth: 1, borderRightColor: colors.border },
+  columnaDerecha: { flex: 1 },
+  seccionTitulo: { color: colors.text2, fontWeight: '700', marginBottom: spacing.sm, fontSize: 16 },
 });
