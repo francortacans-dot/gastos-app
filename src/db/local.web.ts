@@ -1,4 +1,4 @@
-import type { LocalStore } from './local';
+import type { LocalStore } from './local-store';
 
 /**
  * En escritorio/web, Firestore ya persiste en IndexedDB (ver src/firebase/app.ts),

@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import type { LocalStore, PendingWrite } from './local';
+import type { LocalStore, PendingWrite } from './local-store';
 
 const dbPromise = SQLite.openDatabaseAsync('gastos-local.db');
 

@@ -1,5 +1,5 @@
 import { crearColaDeSincronizacion } from '../sync';
-import type { LocalStore, PendingWrite } from '../local';
+import type { LocalStore, PendingWrite } from '../local-store';
 
 function crearStoreFake(): LocalStore & { pendientes: PendingWrite[] } {
   const pendientes: PendingWrite[] = [];

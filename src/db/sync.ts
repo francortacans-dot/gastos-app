@@ -1,4 +1,4 @@
-import type { LocalStore, PendingWrite } from './local';
+import type { LocalStore, PendingWrite } from './local-store';
 
 interface ParametrosCola {
   store: LocalStore;
