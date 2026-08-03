@@ -1,8 +1,11 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
+import { Pressable, Text } from 'react-native';
 import { colors } from '../../src/theme/colors';
 
 export default function TabsLayout() {
+  const router = useRouter();
+
   return (
     <Tabs
       screenOptions={{
@@ -12,7 +15,17 @@ export default function TabsLayout() {
         headerTintColor: colors.text1,
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Inicio',
+          headerRight: () => (
+            <Pressable onPress={() => router.push('/config')} style={{ marginRight: 16 }}>
+              <Text style={{ color: colors.primary, fontWeight: '600' }}>⚙</Text>
+            </Pressable>
+          ),
+        }}
+      />
       <Tabs.Screen name="historial" options={{ title: 'Historial' }} />
       <Tabs.Screen name="sectores" options={{ title: 'Sectores' }} />
       <Tabs.Screen name="ahorro" options={{ title: 'Ahorro' }} />
