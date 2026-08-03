@@ -18,9 +18,12 @@ y cuenta de backend completamente separados.
   (Windows/Mac). Un solo código de UI para celular y PC.
 - **Backend**: **Firebase** (Firestore + Firebase Auth). Proyecto y cuenta 100%
   personales, separados de cualquier cuenta de FyLabs.
-- **Offline-first**: nativo de Firestore — persistencia local automática, sin necesidad
-  de armar una cola de sincronización a mano. Los cambios hechos sin conexión se guardan
-  localmente y se sincronizan solos al recuperar la red.
+- **Offline-first**: en escritorio/web se usa la persistencia nativa de Firestore
+  (`persistentLocalCache`, respaldada por IndexedDB). En celular el SDK de JavaScript de
+  Firebase **solo tiene cache en memoria** — no persiste en disco — así que se agrega una
+  **cola local propia** sobre `expo-sqlite`: los gastos se escriben primero localmente y
+  se suben a Firestore cuando hay red. Como hay un único usuario escribiendo desde un
+  dispositivo a la vez, no hace falta resolución de conflictos: last-write-wins alcanza.
 - **Cotización USD**: se consulta `dolarapi.com` (oficial y blue), se cachea localmente
   para poder mostrar valores en USD aunque no haya conexión en ese momento.
 - **Distribución**: `.apk` directo para Android (sin pasar por Google Play), Expo Go
