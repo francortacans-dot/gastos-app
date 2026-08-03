@@ -1,31 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { useApp } from '../src/app-context';
-import { usePinGate } from '../src/app-context/pin-gate';
-import { getFirestoreDb } from '../src/firebase/app';
+import { usePinGateContext } from '../src/app-context/pin-gate-context';
 import { pinEsValido } from '../src/auth/pin';
 import { colors } from '../src/theme/colors';
 import { spacing } from '../src/theme/spacing';
 
 export default function PantallaPin() {
-  const { uid } = useApp();
+  const gate = usePinGateContext();
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [pinExistente, setPinExistente] = useState<string | null | undefined>(undefined);
 
-  React.useEffect(() => {
-    const ref = doc(getFirestoreDb(), 'users', uid, 'settings', 'preferences');
-    getDoc(ref).then((snap) => setPinExistente(snap.exists() ? (snap.data().pinHash as string) ?? null : null));
-  }, [uid]);
-
-  const gate = usePinGate({
-    pinHashGuardado: pinExistente ?? null,
-    guardarHash: async (hash) => {
-      const ref = doc(getFirestoreDb(), 'users', uid, 'settings', 'preferences');
-      await setDoc(ref, { pinHash: hash }, { merge: true });
-    },
-  });
+  const pinExistente = gate.pinGuardado;
 
   async function confirmar() {
     if (!pinEsValido(pin)) {
