@@ -20,9 +20,6 @@ jest.mock('firebase/auth', () => ({
 }));
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
   default: {},
-}));
-
-jest.mock('react-native', () => ({
-  Platform: { OS: 'web' },
 }));
