@@ -1,0 +1,134 @@
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useApp } from '../src/app-context';
+import { useSectores } from '../src/hooks/use-datos';
+import { parseAmountToCentavos } from '../src/domain/money';
+import type { PaymentMethod } from '../src/domain/types';
+import { colors } from '../src/theme/colors';
+import { spacing } from '../src/theme/spacing';
+
+const METODOS: { valor: PaymentMethod; etiqueta: string }[] = [
+  { valor: 'efectivo', etiqueta: 'Efectivo' },
+  { valor: 'debito', etiqueta: 'Débito' },
+  { valor: 'credito', etiqueta: 'Crédito' },
+  { valor: 'transferencia', etiqueta: 'Transferencia' },
+];
+
+export default function GastoNuevo() {
+  const router = useRouter();
+  const { repos } = useApp();
+  const sectores = useSectores();
+
+  const [montoTexto, setMontoTexto] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [sectorId, setSectorId] = useState<string | null>(null);
+  const [lugar, setLugar] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [metodoPago, setMetodoPago] = useState<PaymentMethod | null>(null);
+  const [mostrarOpcionales, setMostrarOpcionales] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+
+  async function guardar() {
+    const centavos = parseAmountToCentavos(montoTexto);
+    if (centavos === null || centavos === 0) {
+      setError('Ingresá un monto válido');
+      return;
+    }
+
+    setGuardando(true);
+    try {
+      await repos.expenses.agregar({
+        centavosArs: centavos,
+        montoOriginal: centavos / 100,
+        monedaOriginal: 'ARS',
+        cotizacionUsada: null,
+        fecha: new Date().toISOString().slice(0, 10),
+        sectorId,
+        lugar: lugar.trim() || null,
+        descripcion: descripcion.trim() || null,
+        metodoPago,
+      });
+      router.back();
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+      <TextInput
+        value={montoTexto}
+        onChangeText={(t) => {
+          setMontoTexto(t);
+          setError(null);
+        }}
+        placeholder="0,00"
+        keyboardType="decimal-pad"
+        style={estilos.inputMonto}
+        autoFocus
+      />
+      {error && <Text style={estilos.error}>{error}</Text>}
+
+      <Pressable onPress={() => setMostrarOpcionales((v) => !v)}>
+        <Text style={estilos.linkOpcionales}>{mostrarOpcionales ? 'Ocultar detalles' : 'Agregar detalles (opcional)'}</Text>
+      </Pressable>
+
+      {mostrarOpcionales && (
+        <View style={estilos.opcionales}>
+          <Text style={estilos.etiquetaCampo}>Sector</Text>
+          <View style={estilos.filaChips}>
+            {sectores.map((s) => (
+              <Pressable
+                key={s.id}
+                onPress={() => setSectorId(sectorId === s.id ? null : s.id)}
+                style={[estilos.chip, { borderColor: s.color }, sectorId === s.id && { backgroundColor: s.color }]}
+              >
+                <Text style={[estilos.textoChip, sectorId === s.id && { color: colors.surface }]}>{s.nombre}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={estilos.etiquetaCampo}>Lugar</Text>
+          <TextInput value={lugar} onChangeText={setLugar} style={estilos.inputTexto} placeholder="Ej: Supermercado" />
+
+          <Text style={estilos.etiquetaCampo}>Descripción</Text>
+          <TextInput value={descripcion} onChangeText={setDescripcion} style={estilos.inputTexto} placeholder="Ej: Compra del mes" />
+
+          <Text style={estilos.etiquetaCampo}>Método de pago</Text>
+          <View style={estilos.filaChips}>
+            {METODOS.map((m) => (
+              <Pressable
+                key={m.valor}
+                onPress={() => setMetodoPago(metodoPago === m.valor ? null : m.valor)}
+                style={[estilos.chip, { borderColor: colors.border }, metodoPago === m.valor && { backgroundColor: colors.primary }]}
+              >
+                <Text style={[estilos.textoChip, metodoPago === m.valor && { color: colors.surface }]}>{m.etiqueta}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      <Pressable style={estilos.botonGuardar} onPress={guardar} disabled={guardando}>
+        <Text style={estilos.textoBotonGuardar}>{guardando ? 'Guardando...' : 'Guardar gasto'}</Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: colors.bg },
+  contenido: { padding: spacing.lg },
+  inputMonto: { fontSize: 40, fontWeight: '700', color: colors.text1, textAlign: 'center', marginBottom: spacing.sm },
+  error: { color: colors.red, textAlign: 'center', marginBottom: spacing.sm },
+  linkOpcionales: { color: colors.primary, textAlign: 'center', marginBottom: spacing.md, fontWeight: '600' },
+  opcionales: { marginBottom: spacing.lg },
+  etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
+  filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  textoChip: { color: colors.text2 },
+  inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
+  botonGuardar: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center' },
+  textoBotonGuardar: { color: colors.surface, fontWeight: '700', fontSize: 16 },
+});
