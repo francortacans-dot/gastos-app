@@ -1166,7 +1166,8 @@ git commit -m "agrega inicialización de Firebase con cache según plataforma"
 ## Task 6: Persistencia local en celular (SQLite) y cola de sincronización
 
 **Files:**
-- Create: `src/db/local.ts`, `src/db/local.native.ts`, `src/db/local.web.ts`, `src/db/sync.ts`, `src/db/__tests__/sync.test.ts`
+- Create: `src/db/local-store.ts`, `src/db/local.native.ts`, `src/db/local.web.ts`, `src/db/sync.ts`, `src/db/__tests__/sync.test.ts`
+- Modify: `tsconfig.json` (agregar `moduleSuffixes`)
 
 **Interfaces:**
 - Consumes: nada nuevo
@@ -1177,9 +1178,11 @@ git commit -m "agrega inicialización de Firebase con cache según plataforma"
 
 La cola es el mecanismo que soluciona el hueco que encontramos: en celular, Firestore no persiste en disco, así que cada escritura se guarda primero en SQLite local (vía `LocalStore`) y `sincronizar()` la sube cuando hay red.
 
+**Corrección post-implementación:** el archivo `src/db/local.ts` (Step 1, abajo) se terminó renombrando a **`src/db/local-store.ts`** durante la implementación. Motivo: TypeScript necesita `"moduleSuffixes": [".native", ".web", ""]` en `tsconfig.json` para resolver `import { localStoreSqlite } from './local'` al archivo de la plataforma correcta (Metro ya lo hacía en runtime, pero `tsc --noEmit` no). Con esa opción activada, si el archivo de interfaz se sigue llamando `local.ts`, cualquier import de tipos hecho *desde adentro* de `local.native.ts`/`local.web.ts` hacia `./local` se vuelve auto-referencial y rompe. La solución fue sacarle el nombre "local" al archivo de interfaz: `local.ts` → `local-store.ts`. Todas las referencias de tipos (`LocalStore`, `PendingWrite`) en los pasos de abajo y en la Task 7 ya están actualizadas a `local-store`; el import del valor `localStoreSqlite` (la implementación real, no el tipo) sigue apuntando a `'../db/local'`, que es justamente el que ahora resuelve bien por plataforma.
+
 - [ ] **Step 1: Escribir la interfaz común**
 
-Crear `src/db/local.ts`:
+Crear `src/db/local-store.ts`:
 
 ```typescript
 export interface PendingWrite {
@@ -1311,7 +1314,7 @@ Expected: FAIL — "Cannot find module '../sync'".
 Crear `src/db/sync.ts`:
 
 ```typescript
-import type { LocalStore, PendingWrite } from './local';
+import type { LocalStore, PendingWrite } from './local-store';
 
 interface ParametrosCola {
   store: LocalStore;
@@ -1363,7 +1366,7 @@ Crear `src/db/local.native.ts`:
 
 ```typescript
 import * as SQLite from 'expo-sqlite';
-import type { LocalStore, PendingWrite } from './local';
+import type { LocalStore, PendingWrite } from './local-store';
 
 const dbPromise = SQLite.openDatabaseAsync('gastos-local.db');
 
@@ -1482,10 +1485,31 @@ export const localStoreSqlite: LocalStore = {
 
 Metro (el bundler de Expo) resuelve automáticamente `local.native.ts` en iOS/Android y `local.web.ts` en web por la extensión de archivo — no hace falta lógica de `Platform.select` para esto.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 8: Configurar `tsconfig.json` para que `tsc` resuelva el mismo patrón que Metro**
+
+Metro resuelve `import { localStoreSqlite } from './local'` al archivo de plataforma correcto en runtime, pero `tsc --noEmit` no lo hace por defecto — sin ayuda, resolvería `./local` de forma literal y fallaría porque ese archivo ya no existe (se llama `local-store.ts` y no exporta `localStoreSqlite`). Agregar a `tsconfig.json`, dentro de `compilerOptions`:
+
+```json
+"moduleSuffixes": [".native", ".web", ""]
+```
+
+- [ ] **Step 9: Verificar que `tsc` resuelve el import de la plataforma**
+
+Crear un archivo temporal `src/db/__scratch-import-check.ts`:
+
+```typescript
+import { localStoreSqlite } from './local';
+import type { LocalStore } from './local-store';
+localStoreSqlite.listarPendientes();
+```
+
+Run: `npx tsc --noEmit`
+Expected: sin errores relacionados a `localStoreSqlite`, `local-store` ni a ningún archivo bajo `src/db/`. Después, borrar `src/db/__scratch-import-check.ts` — era solo para verificar, no se commitea.
+
+- [ ] **Step 10: Commit**
 
 ```bash
-git add src/db
+git add src/db tsconfig.json
 git commit -m "agrega cola de sincronización offline con SQLite en celular"
 ```
 
@@ -1511,7 +1535,7 @@ Crear `src/repos/__tests__/expense-repo.test.ts`:
 
 ```typescript
 import { crearExpenseRepo } from '../expense-repo';
-import type { LocalStore, PendingWrite } from '../../db/local';
+import type { LocalStore, PendingWrite } from '../../db/local-store';
 import type { Expense } from '../../domain/types';
 
 function crearStoreFake(): LocalStore & { pendientes: PendingWrite[] } {
@@ -1618,7 +1642,7 @@ Crear `src/repos/expense-repo.ts`:
 ```typescript
 import { doc, deleteDoc, setDoc, collection, onSnapshot, type Firestore } from 'firebase/firestore';
 import * as Crypto from 'expo-crypto';
-import type { LocalStore } from '../db/local';
+import type { LocalStore } from '../db/local-store';
 import type { Expense } from '../domain/types';
 
 interface DepsExpenseRepo {
@@ -1719,7 +1743,7 @@ Crear `src/repos/sector-repo.ts`:
 ```typescript
 import { doc, deleteDoc, setDoc, collection, onSnapshot, type Firestore } from 'firebase/firestore';
 import * as Crypto from 'expo-crypto';
-import type { LocalStore } from '../db/local';
+import type { LocalStore } from '../db/local-store';
 import type { Sector } from '../domain/types';
 
 interface DepsSectorRepo {
@@ -1802,7 +1826,7 @@ Crear `src/repos/budget-repo.ts` (misma forma, pero la clave del documento es `B
 
 ```typescript
 import { doc, setDoc, collection, onSnapshot, type Firestore } from 'firebase/firestore';
-import type { LocalStore } from '../db/local';
+import type { LocalStore } from '../db/local-store';
 import type { Budget } from '../domain/types';
 
 interface DepsBudgetRepo {
@@ -1872,7 +1896,7 @@ Crear `src/repos/savings-repo.ts` (misma forma que `expense-repo.ts`, cambiando 
 ```typescript
 import { doc, setDoc, collection, onSnapshot, type Firestore } from 'firebase/firestore';
 import * as Crypto from 'expo-crypto';
-import type { LocalStore } from '../db/local';
+import type { LocalStore } from '../db/local-store';
 import type { SavingMovement } from '../domain/types';
 
 interface DepsSavingsRepo {
