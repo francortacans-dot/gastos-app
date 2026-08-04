@@ -1,35 +1,19 @@
 import React from 'react';
-import { Tabs, useRouter } from 'expo-router';
-import { Pressable, Text } from 'react-native';
-import { useColors } from '../../src/theme/theme-context';
+import { Tabs } from 'expo-router';
+import { AppHeader } from '../../src/components/app-header';
 
 export default function TabsLayout() {
-  const router = useRouter();
-  const colors = useColors();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text3,
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text1,
+        header: () => <AppHeader />,
+        tabBarStyle: { display: 'none' },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Inicio',
-          headerRight: () => (
-            <Pressable onPress={() => router.push('/config')} style={{ marginRight: 16 }}>
-              <Text style={{ color: colors.primary, fontWeight: '600' }}>⚙</Text>
-            </Pressable>
-          ),
-        }}
-      />
-      <Tabs.Screen name="historial" options={{ title: 'Historial' }} />
-      <Tabs.Screen name="sectores" options={{ title: 'Sectores' }} />
-      <Tabs.Screen name="ahorro" options={{ title: 'Ahorro' }} />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="historial" />
+      <Tabs.Screen name="sectores" />
+      <Tabs.Screen name="ahorro" />
     </Tabs>
   );
 }
