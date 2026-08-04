@@ -1,6 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { signOut } from 'firebase/auth';
 import { useApp } from '../src/app-context';
+import { useAuth } from '../src/auth/auth-context';
+import { crearCuenta } from '../src/auth/email-auth';
+import { getFirebaseAuth } from '../src/firebase/app';
 import { usePreferences } from '../src/preferences/use-preferences';
 import { useMesActual } from '../src/hooks/use-mes-actual';
 import { usePresupuestos } from '../src/hooks/use-datos';
@@ -12,6 +16,7 @@ import type { RateKind } from '../src/domain/types';
 
 export default function Configuracion() {
   const { repos } = useApp();
+  const { usuario } = useAuth();
   const preferencias = usePreferences();
   const colors = useColors();
   const estilos = useMemo(() => crearEstilos(colors), [colors]);
@@ -24,6 +29,11 @@ export default function Configuracion() {
   );
   const [error, setError] = useState<string | null>(null);
 
+  const [emailCuenta, setEmailCuenta] = useState('');
+  const [passwordCuenta, setPasswordCuenta] = useState('');
+  const [errorCuenta, setErrorCuenta] = useState<string | null>(null);
+  const [creandoCuenta, setCreandoCuenta] = useState(false);
+
   async function guardarPresupuesto() {
     const centavos = parseAmountToCentavos(presupuestoTexto);
     if (centavos === null) {
@@ -32,6 +42,22 @@ export default function Configuracion() {
     }
     await repos.budgets.guardar({ mes, totalCentavos: centavos });
     setError(null);
+  }
+
+  async function crearCuentaConEmail() {
+    if (!emailCuenta.trim() || passwordCuenta.length < 6) {
+      setErrorCuenta('Ingresá un email y una contraseña de al menos 6 caracteres');
+      return;
+    }
+    setCreandoCuenta(true);
+    try {
+      await crearCuenta(emailCuenta.trim(), passwordCuenta);
+      setErrorCuenta(null);
+    } catch {
+      setErrorCuenta('No se pudo crear la cuenta. Probá con otro email.');
+    } finally {
+      setCreandoCuenta(false);
+    }
   }
 
   return (
@@ -100,6 +126,41 @@ export default function Configuracion() {
           </Pressable>
         ))}
       </View>
+
+      <Text style={estilos.seccionTitulo}>Cuenta</Text>
+      {usuario && !usuario.isAnonymous ? (
+        <View>
+          <Text style={estilos.actual}>Sesión iniciada como {usuario.email}</Text>
+          <Pressable style={estilos.boton} onPress={() => signOut(getFirebaseAuth())}>
+            <Text style={estilos.textoBoton}>Cerrar sesión</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View>
+          <Text style={estilos.actual}>
+            Todavía no tenés cuenta con email. Creá una para poder entrar con los mismos datos desde otro dispositivo.
+          </Text>
+          <TextInput
+            value={emailCuenta}
+            onChangeText={setEmailCuenta}
+            placeholder="Email"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={estilos.input}
+          />
+          <TextInput
+            value={passwordCuenta}
+            onChangeText={setPasswordCuenta}
+            placeholder="Contraseña"
+            secureTextEntry
+            style={estilos.input}
+          />
+          {errorCuenta && <Text style={estilos.error}>{errorCuenta}</Text>}
+          <Pressable style={estilos.boton} onPress={crearCuentaConEmail} disabled={creandoCuenta}>
+            <Text style={estilos.textoBoton}>{creandoCuenta ? 'Creando...' : 'Crear cuenta con email'}</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }

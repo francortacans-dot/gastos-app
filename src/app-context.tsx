@@ -1,6 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirebaseAuth } from './firebase/app';
+import React, { createContext, useContext } from 'react';
 import { crearRepos, type Repos } from './repos/create-repo';
 
 interface AppContextValue {
@@ -10,27 +8,9 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [uid, setUid] = useState<string | null>(null);
-
-  useEffect(() => {
-    const auth = getFirebaseAuth();
-    const desuscribir = onAuthStateChanged(auth, (usuario) => {
-      if (usuario) {
-        setUid(usuario.uid);
-      } else {
-        signInAnonymously(auth).catch((error) => {
-          console.error('No se pudo iniciar sesión anónima en Firebase:', error);
-        });
-      }
-    });
-    return desuscribir;
-  }, []);
-
-  if (!uid) return null; // la Task 17 agrega un splash mientras esto resuelve
-
+/** Solo se monta una vez que hay una sesión de Firebase Auth activa (ver AuthProvider). */
+export function AppProvider({ uid, children }: { uid: string; children: React.ReactNode }) {
   const repos = crearRepos(uid);
-
   return <AppContext.Provider value={{ repos, uid }}>{children}</AppContext.Provider>;
 }
 
