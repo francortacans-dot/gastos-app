@@ -9,27 +9,29 @@ import { initializeAuth, getAuth, getReactNativePersistence, type Auth } from 'f
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const VARIABLES_REQUERIDAS = [
-  'EXPO_PUBLIC_FIREBASE_API_KEY',
-  'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
-  'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
-  'EXPO_PUBLIC_FIREBASE_APP_ID',
-] as const;
+function faltaVariable(nombre: string): never {
+  throw new Error(
+    `Falta la variable de entorno ${nombre}. Copiá .env.example a .env y completá las credenciales de Firebase.`
+  );
+}
 
+/**
+ * Metro solo inlinea en el build de producción los accesos ESTÁTICOS del
+ * tipo `process.env.EXPO_PUBLIC_X`. Un `process.env[variable]` dinámico
+ * (ej. dentro de un for-of sobre un array de nombres) no se reemplaza y
+ * queda `undefined` en runtime, tirando siempre este error aunque el
+ * `.env` esté bien completado. Por eso cada variable se lee con su propio
+ * acceso estático en vez de iterar un array de nombres.
+ */
 function leerConfiguracion() {
-  for (const variable of VARIABLES_REQUERIDAS) {
-    if (!process.env[variable]) {
-      throw new Error(
-        `Falta la variable de entorno ${variable}. Copiá .env.example a .env y completá las credenciales de Firebase.`
-      );
-    }
-  }
-  return {
-    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY!,
-    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID!,
-    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID!,
-  };
+  const apiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? faltaVariable('EXPO_PUBLIC_FIREBASE_API_KEY');
+  const authDomain =
+    process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ?? faltaVariable('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN');
+  const projectId =
+    process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? faltaVariable('EXPO_PUBLIC_FIREBASE_PROJECT_ID');
+  const appId = process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? faltaVariable('EXPO_PUBLIC_FIREBASE_APP_ID');
+
+  return { apiKey, authDomain, projectId, appId };
 }
 
 let app: FirebaseApp | null = null;
