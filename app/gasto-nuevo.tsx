@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/app-context';
 import { useSectores } from '../src/hooks/use-datos';
 import { parseAmountToCentavos } from '../src/domain/money';
 import type { PaymentMethod } from '../src/domain/types';
-import { colors } from '../src/theme/colors';
+import { useColors } from '../src/theme/theme-context';
+import type { Colors } from '../src/theme/palettes';
 import { spacing } from '../src/theme/spacing';
 
 const METODOS: { valor: PaymentMethod; etiqueta: string }[] = [
@@ -19,6 +20,8 @@ export default function GastoNuevo() {
   const router = useRouter();
   const { repos } = useApp();
   const sectores = useSectores();
+  const colors = useColors();
+  const estilos = useMemo(() => crearEstilos(colors), [colors]);
 
   const [montoTexto, setMontoTexto] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -117,18 +120,20 @@ export default function GastoNuevo() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: colors.bg },
-  contenido: { padding: spacing.lg },
-  inputMonto: { fontSize: 40, fontWeight: '700', color: colors.text1, textAlign: 'center', marginBottom: spacing.sm },
-  error: { color: colors.red, textAlign: 'center', marginBottom: spacing.sm },
-  linkOpcionales: { color: colors.primary, textAlign: 'center', marginBottom: spacing.md, fontWeight: '600' },
-  opcionales: { marginBottom: spacing.lg },
-  etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
-  filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  chip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  textoChip: { color: colors.text2 },
-  inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
-  botonGuardar: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center' },
-  textoBotonGuardar: { color: colors.surface, fontWeight: '700', fontSize: 16 },
-});
+function crearEstilos(colors: Colors) {
+  return StyleSheet.create({
+    contenedor: { flex: 1, backgroundColor: colors.bg },
+    contenido: { padding: spacing.lg },
+    inputMonto: { fontSize: 40, fontWeight: '700', color: colors.text1, textAlign: 'center', marginBottom: spacing.sm },
+    error: { color: colors.red, textAlign: 'center', marginBottom: spacing.sm },
+    linkOpcionales: { color: colors.primary, textAlign: 'center', marginBottom: spacing.md, fontWeight: '600' },
+    opcionales: { marginBottom: spacing.lg },
+    etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
+    filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    chip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+    textoChip: { color: colors.text2 },
+    inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
+    botonGuardar: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center' },
+    textoBotonGuardar: { color: colors.surface, fontWeight: '700', fontSize: 16 },
+  });
+}

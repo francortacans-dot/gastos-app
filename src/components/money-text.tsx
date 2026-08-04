@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, type TextStyle } from 'react-native';
 import { formatCentavos, formatUsd, centavosArsToUsd } from '../domain/money';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/theme-context';
 
 interface MoneyTextProps {
   centavos: number;
@@ -13,6 +13,7 @@ interface MoneyTextProps {
 
 /** Muestra un monto en centavos de ARS, opcionalmente convertido a USD para visualización. */
 export function MoneyText({ centavos, moneda, cotizacion, style }: MoneyTextProps) {
+  const colors = useColors();
   const texto =
     moneda === 'ARS' ? formatCentavos(centavos) : formatUsd(centavosArsToUsd(centavos, cotizacion ?? 0));
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, FlatList, StyleSheet } from 'react-native';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
@@ -7,7 +7,8 @@ import { gastadoPorSector } from '../../src/domain/budget';
 import { PieChart } from '../../src/components/pie-chart';
 import { MoneyText } from '../../src/components/money-text';
 import { formatCentavos } from '../../src/domain/money';
-import { colors } from '../../src/theme/colors';
+import { useColors } from '../../src/theme/theme-context';
+import type { Colors } from '../../src/theme/palettes';
 import { spacing } from '../../src/theme/spacing';
 
 function nombreDeMes(mesClave: string): string {
@@ -22,6 +23,8 @@ export default function Historial() {
   const resumen = useResumenMes(mes);
   const sectores = useSectores();
   const gastos = useGastos();
+  const colors = useColors();
+  const estilos = useMemo(() => crearEstilos(colors), [colors]);
 
   const gastoPorSector = gastadoPorSector(gastos, mes);
   const porciones = sectores
@@ -76,19 +79,21 @@ export default function Historial() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: colors.bg },
-  contenido: { padding: spacing.md },
-  selectorMes: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-  flecha: { fontSize: 28, color: colors.primary, paddingHorizontal: spacing.md },
-  tituloMes: { fontSize: 18, fontWeight: '700', color: colors.text1 },
-  tarjetaResumen: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, marginBottom: spacing.md },
-  etiqueta: { color: colors.text3, marginTop: spacing.xs },
-  monto: { fontSize: 20, fontWeight: '700' },
-  centrado: { alignItems: 'center', marginBottom: spacing.md },
-  filaGasto: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.xs },
-  descripcionGasto: { color: colors.text1, fontWeight: '600' },
-  fechaGasto: { color: colors.text3, fontSize: 12 },
-  montoGasto: { color: colors.text1, fontWeight: '700' },
-  vacio: { color: colors.text3, textAlign: 'center', marginTop: spacing.md },
-});
+function crearEstilos(colors: Colors) {
+  return StyleSheet.create({
+    contenedor: { flex: 1, backgroundColor: colors.bg },
+    contenido: { padding: spacing.md },
+    selectorMes: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+    flecha: { fontSize: 28, color: colors.primary, paddingHorizontal: spacing.md },
+    tituloMes: { fontSize: 18, fontWeight: '700', color: colors.text1 },
+    tarjetaResumen: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, marginBottom: spacing.md },
+    etiqueta: { color: colors.text3, marginTop: spacing.xs },
+    monto: { fontSize: 20, fontWeight: '700' },
+    centrado: { alignItems: 'center', marginBottom: spacing.md },
+    filaGasto: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.xs },
+    descripcionGasto: { color: colors.text1, fontWeight: '600' },
+    fechaGasto: { color: colors.text3, fontSize: 12 },
+    montoGasto: { color: colors.text1, fontWeight: '700' },
+    vacio: { color: colors.text3, textAlign: 'center', marginTop: spacing.md },
+  });
+}

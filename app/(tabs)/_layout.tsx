@@ -1,10 +1,11 @@
 import React from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { Pressable, Text } from 'react-native';
-import { colors } from '../../src/theme/colors';
+import { useColors } from '../../src/theme/theme-context';
 
 export default function TabsLayout() {
   const router = useRouter();
+  const colors = useColors();
 
   return (
     <Tabs

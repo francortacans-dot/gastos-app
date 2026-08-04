@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { usePinGateContext } from '../src/app-context/pin-gate-context';
 import { pinEsValido } from '../src/auth/pin';
-import { colors } from '../src/theme/colors';
+import { useColors } from '../src/theme/theme-context';
+import type { Colors } from '../src/theme/palettes';
 import { spacing } from '../src/theme/spacing';
 
 export default function PantallaPin() {
   const gate = usePinGateContext();
+  const colors = useColors();
+  const estilos = useMemo(() => crearEstilos(colors), [colors]);
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -46,19 +49,21 @@ export default function PantallaPin() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg, padding: spacing.lg },
-  titulo: { fontSize: 20, fontWeight: '700', color: colors.text1, marginBottom: spacing.lg },
-  input: {
-    fontSize: 32,
-    letterSpacing: 16,
-    textAlign: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: colors.primary,
-    width: 160,
-    marginBottom: spacing.md,
-  },
-  error: { color: colors.red, marginBottom: spacing.md },
-  boton: { backgroundColor: colors.primary, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: 8 },
-  textoBoton: { color: colors.surface, fontWeight: '600' },
-});
+function crearEstilos(colors: Colors) {
+  return StyleSheet.create({
+    contenedor: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg, padding: spacing.lg },
+    titulo: { fontSize: 20, fontWeight: '700', color: colors.text1, marginBottom: spacing.lg },
+    input: {
+      fontSize: 32,
+      letterSpacing: 16,
+      textAlign: 'center',
+      borderBottomWidth: 2,
+      borderBottomColor: colors.primary,
+      width: 160,
+      marginBottom: spacing.md,
+    },
+    error: { color: colors.red, marginBottom: spacing.md },
+    boton: { backgroundColor: colors.primary, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: 8 },
+    textoBoton: { color: colors.surface, fontWeight: '600' },
+  });
+}

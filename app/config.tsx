@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useApp } from '../src/app-context';
 import { usePreferences } from '../src/preferences/use-preferences';
 import { useMesActual } from '../src/hooks/use-mes-actual';
 import { usePresupuestos } from '../src/hooks/use-datos';
 import { parseAmountToCentavos, formatCentavos } from '../src/domain/money';
-import { colors } from '../src/theme/colors';
+import { useColors } from '../src/theme/theme-context';
+import { palettes, temaLabels, temaSwatch, type Colors, type TemaId } from '../src/theme/palettes';
 import { spacing } from '../src/theme/spacing';
 import type { RateKind } from '../src/domain/types';
 
 export default function Configuracion() {
   const { repos } = useApp();
   const preferencias = usePreferences();
+  const colors = useColors();
+  const estilos = useMemo(() => crearEstilos(colors), [colors]);
   const { mes } = useMesActual();
   const presupuestos = usePresupuestos();
 
@@ -79,21 +82,53 @@ export default function Configuracion() {
           </Pressable>
         ))}
       </View>
+
+      <Text style={estilos.seccionTitulo}>Tema</Text>
+      <View style={estilos.filaTemas}>
+        {(Object.keys(temaLabels) as TemaId[]).map((t) => (
+          <Pressable
+            key={t}
+            onPress={() => preferencias.setTema(t)}
+            style={[estilos.tarjetaTema, preferencias.tema === t && estilos.tarjetaTemaActiva]}
+          >
+            <View style={estilos.filaSwatches}>
+              <View style={[estilos.swatch, { backgroundColor: temaSwatch[t] }]} />
+              <View style={[estilos.swatch, { backgroundColor: palettes[t].bg, borderWidth: 1, borderColor: colors.border }]} />
+              <View style={[estilos.swatch, { backgroundColor: palettes[t].surface2 }]} />
+            </View>
+            <Text style={estilos.textoTema}>{temaLabels[t]}</Text>
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
-  seccionTitulo: { color: colors.text2, fontWeight: '700', marginTop: spacing.lg, marginBottom: spacing.sm },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface, marginBottom: spacing.sm },
-  error: { color: colors.red, marginBottom: spacing.sm },
-  boton: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
-  textoBoton: { color: colors.surface, fontWeight: '700' },
-  actual: { color: colors.text3, marginTop: spacing.xs },
-  filaOpciones: { flexDirection: 'row', gap: spacing.sm },
-  opcion: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
-  opcionActiva: { backgroundColor: colors.primary, borderColor: colors.primary },
-  textoOpcion: { color: colors.text2, fontWeight: '600' },
-  textoOpcionActiva: { color: colors.surface },
-});
+function crearEstilos(colors: Colors) {
+  return StyleSheet.create({
+    contenedor: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
+    seccionTitulo: { color: colors.text2, fontWeight: '700', marginTop: spacing.lg, marginBottom: spacing.sm },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface, marginBottom: spacing.sm },
+    error: { color: colors.red, marginBottom: spacing.sm },
+    boton: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
+    textoBoton: { color: colors.surface, fontWeight: '700' },
+    actual: { color: colors.text3, marginTop: spacing.xs },
+    filaOpciones: { flexDirection: 'row', gap: spacing.sm },
+    opcion: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
+    opcionActiva: { backgroundColor: colors.primary, borderColor: colors.primary },
+    textoOpcion: { color: colors.text2, fontWeight: '600' },
+    textoOpcionActiva: { color: colors.surface },
+    filaTemas: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    tarjetaTema: {
+      borderWidth: 2,
+      borderColor: colors.border,
+      borderRadius: 10,
+      padding: spacing.sm,
+      width: 100,
+    },
+    tarjetaTemaActiva: { borderColor: colors.primary },
+    filaSwatches: { flexDirection: 'row', gap: 4, marginBottom: spacing.xs },
+    swatch: { width: 18, height: 18, borderRadius: 4 },
+    textoTema: { color: colors.text2, fontSize: 12, fontWeight: '600' },
+  });
+}
