@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Link, usePathname, useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { useColors } from '../theme/theme-context';
 import type { Colors } from '../theme/palettes';
 import { spacing } from '../theme/spacing';
@@ -31,12 +31,14 @@ export function AppHeader() {
         {TABS.map(({ href, label, Icon }) => {
           const activo = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
-            <Link key={href} href={href} asChild>
-              <Pressable style={[estilos.tab, activo && estilos.tabActivo]}>
-                <Icon color={activo ? colors.primary : colors.text3} size={20} />
-                <Text style={[estilos.textoTab, activo && estilos.textoTabActivo]}>{label}</Text>
-              </Pressable>
-            </Link>
+            <Pressable
+              key={href}
+              onPress={() => router.navigate(href)}
+              style={[estilos.tab, activo && estilos.tabActivo]}
+            >
+              <Icon color={activo ? colors.primary : colors.text3} size={20} />
+              <Text style={[estilos.textoTab, activo && estilos.textoTabActivo]}>{label}</Text>
+            </Pressable>
           );
         })}
       </View>

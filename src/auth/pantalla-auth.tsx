@@ -186,11 +186,7 @@ const estilos = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 20,
     padding: spacing.xl,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 6,
+    boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
   },
   subtitulo: { fontSize: 16, fontWeight: '600', color: colors.text1, marginBottom: spacing.md, textAlign: 'center' },
   campo: {

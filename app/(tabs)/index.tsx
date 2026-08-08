@@ -218,13 +218,8 @@ export default function Home() {
 }
 
 function crearEstilos(colors: Colors) {
-  const sombra = {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  } as const;
+  // boxShadow en vez de las props shadow*, que están deprecadas y no renderizan en web.
+  const sombra = { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as const;
 
   return StyleSheet.create({
     contenedor: { flex: 1, backgroundColor: colors.bg },
@@ -281,11 +276,7 @@ function crearEstilos(colors: Colors) {
       backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.2,
-      shadowRadius: 6,
-      elevation: 4,
+      boxShadow: '0 3px 6px rgba(0,0,0,0.2)',
     },
     contenedorEscritorio: { flex: 1, flexDirection: 'row', backgroundColor: colors.bg },
     columnaIzquierda: { flex: 1, borderRightWidth: 1, borderRightColor: colors.border },
