@@ -89,6 +89,6 @@ function crearEstilos(colors: Colors) {
     formulario: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
     input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.sm },
     boton: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
-    textoBoton: { color: colors.surface, fontWeight: '700' },
+    textoBoton: { color: colors.onPrimary, fontWeight: '700' },
   });
 }

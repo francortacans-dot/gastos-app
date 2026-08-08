@@ -82,7 +82,7 @@ function crearEstilos(colors: Colors) {
     circuloHoy: { borderWidth: 1.5, borderColor: colors.primary },
     circuloSeleccionado: { backgroundColor: colors.primary },
     textoDia: { color: colors.text1, fontSize: 13 },
-    textoDiaSeleccionado: { color: colors.surface, fontWeight: '700' },
+    textoDiaSeleccionado: { color: colors.onPrimary, fontWeight: '700' },
     punto: { width: 4, height: 4, borderRadius: 2, marginTop: 2, backgroundColor: 'transparent' },
     puntoActivo: { backgroundColor: colors.primary },
   });

@@ -140,7 +140,7 @@ function crearEstilos(colors: Colors) {
     },
     error: { color: colors.red, marginBottom: spacing.md },
     boton: { backgroundColor: colors.primary, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: 8 },
-    textoBoton: { color: colors.surface, fontWeight: '600' },
+    textoBoton: { color: colors.onPrimary, fontWeight: '600' },
     enlaceContenedor: { marginTop: spacing.md },
     enlace: { color: colors.primary, fontWeight: '600' },
   });

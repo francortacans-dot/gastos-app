@@ -13,7 +13,7 @@ import { formatCentavos, parseAmountToCentavos } from '../../src/domain/money';
 import { PieChart } from '../../src/components/pie-chart';
 import { SectorProgress } from '../../src/components/sector-progress';
 import { MoneyText } from '../../src/components/money-text';
-import { IconPlus, IconPencil } from '../../src/components/icons';
+import { IconPlus, IconPencil, IconWallet } from '../../src/components/icons';
 import { useColors } from '../../src/theme/theme-context';
 import type { Colors } from '../../src/theme/palettes';
 import { spacing } from '../../src/theme/spacing';
@@ -86,8 +86,10 @@ export default function Home() {
 
   const tarjetaResumen = (
     <View style={estilos.tarjetaResumen}>
-      <View style={estilos.acentoTarjeta} />
-      <Text style={estilos.etiqueta}>Disponible este mes</Text>
+      <View style={estilos.filaEncabezadoTarjeta}>
+        <Text style={estilos.etiqueta}>Disponible este mes</Text>
+        <IconWallet color={colors.onPrimary} size={20} />
+      </View>
       <MoneyText
         centavos={resumen.disponible}
         moneda={preferencias.monedaVisualizacion}
@@ -97,14 +99,14 @@ export default function Home() {
       <View style={estilos.filaDetalle}>
         <View style={estilos.detalleConEditar}>
           <Text style={estilos.detalle}>
-            Presupuesto: <MoneyText centavos={resumen.presupuestoDelMes} moneda={preferencias.monedaVisualizacion} cotizacion={cotizacion?.venta} />
+            Presupuesto: <MoneyText centavos={resumen.presupuestoDelMes} moneda={preferencias.monedaVisualizacion} cotizacion={cotizacion?.venta} style={estilos.detalle} />
           </Text>
           <Pressable onPress={abrirEdicionPresupuesto} hitSlop={8} style={estilos.botonLapiz}>
-            <IconPencil color={colors.text3} size={14} />
+            <IconPencil color={colors.onPrimary} size={14} />
           </Pressable>
         </View>
         <Text style={estilos.detalle}>
-          Gastado: <MoneyText centavos={resumen.gastado} moneda={preferencias.monedaVisualizacion} cotizacion={cotizacion?.venta} />
+          Gastado: <MoneyText centavos={resumen.gastado} moneda={preferencias.monedaVisualizacion} cotizacion={cotizacion?.venta} style={estilos.detalle} />
         </Text>
       </View>
 
@@ -127,7 +129,8 @@ export default function Home() {
       {resumen.acumuladoPrevio > 0 && (
         <Pressable style={estilos.chipAcumulado} onPress={() => router.push('/(tabs)/ahorro')}>
           <Text style={estilos.textoChipAcumulado}>
-            +<MoneyText centavos={resumen.acumuladoPrevio} moneda="ARS" style={estilos.textoChipAcumulado} /> de meses anteriores
+            +<MoneyText centavos={resumen.acumuladoPrevio} moneda="ARS" style={estilos.textoChipAcumulado} /> de meses
+            anteriores
           </Text>
         </Pressable>
       )}
@@ -136,7 +139,7 @@ export default function Home() {
 
   const botonFlotante = (
     <Pressable style={estilos.botonFlotante} onPress={() => router.push('/gasto-nuevo')}>
-      <IconPlus color={colors.surface} size={26} />
+      <IconPlus color={colors.onPrimary} size={26} />
     </Pressable>
   );
 
@@ -229,35 +232,37 @@ function crearEstilos(colors: Colors) {
     chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: 17 },
     chipActivo: { backgroundColor: colors.primary },
     textoChip: { color: colors.text3, fontWeight: '600', fontSize: 13 },
-    textoChipActivo: { color: colors.surface },
+    textoChipActivo: { color: colors.onPrimary },
     tarjetaResumen: {
-      backgroundColor: colors.surface,
+      // Tarjeta hero de color sólido con el acento del tema: es la única superficie
+      // coloreada de la pantalla a propósito, para que resalte sin sobrecargar el resto.
+      backgroundColor: colors.primary,
       borderRadius: 16,
       padding: spacing.lg,
       marginBottom: spacing.md,
       overflow: 'hidden',
       ...sombra,
     },
-    acentoTarjeta: { position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: colors.primary },
-    etiqueta: { color: colors.text3, marginBottom: spacing.xs },
-    montoGrande: { fontSize: 36, fontWeight: '700', color: colors.text1 },
+    filaEncabezadoTarjeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+    // Blanco translúcido en vez de un token de la paleta: es un overlay funcional para
+    // legibilidad sobre `primary` (que cambia de tono según el tema), no un color nuevo.
+    etiqueta: { color: 'rgba(255,255,255,0.85)' },
+    montoGrande: { fontSize: 36, fontWeight: '700', color: colors.onPrimary },
     filaDetalle: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm, alignItems: 'center' },
     detalleConEditar: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    detalle: { color: colors.text2 },
+    detalle: { color: 'rgba(255,255,255,0.85)' },
     botonLapiz: { padding: 4 },
     filaEdicion: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm },
     inputPresupuesto: {
       flex: 1,
-      borderWidth: 1,
-      borderColor: colors.border,
       borderRadius: 8,
       padding: spacing.xs,
-      backgroundColor: colors.surface2,
+      backgroundColor: colors.surface,
     },
-    botonChico: { backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: spacing.sm, justifyContent: 'center' },
-    textoBotonChico: { color: colors.surface, fontWeight: '600', fontSize: 13 },
-    chipAcumulado: { marginTop: spacing.sm, backgroundColor: colors.primaryLight, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
-    textoChipAcumulado: { color: colors.primaryDark, fontWeight: '600' },
+    botonChico: { backgroundColor: colors.surface, borderRadius: 8, paddingHorizontal: spacing.sm, justifyContent: 'center' },
+    textoBotonChico: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+    chipAcumulado: { marginTop: spacing.sm, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
+    textoChipAcumulado: { color: colors.onPrimary, fontWeight: '600' },
     centrado: { alignItems: 'center', marginBottom: spacing.md },
     seccion: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.lg, marginBottom: spacing.md, ...sombra },
     vacio: { color: colors.text3 },

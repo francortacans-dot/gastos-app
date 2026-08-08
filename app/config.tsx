@@ -187,7 +187,7 @@ function crearEstilos(colors: Colors) {
     error: { color: colors.red, marginBottom: spacing.sm },
     mensaje: { color: colors.primaryDark, marginBottom: spacing.sm },
     boton: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
-    textoBoton: { color: colors.surface, fontWeight: '700' },
+    textoBoton: { color: colors.onPrimary, fontWeight: '700' },
     botonSecundario: { marginTop: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
     textoBotonSecundario: { color: colors.text2, fontWeight: '600' },
     actual: { color: colors.text3, marginTop: spacing.xs, marginBottom: spacing.sm },

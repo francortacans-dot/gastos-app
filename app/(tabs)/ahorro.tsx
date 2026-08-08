@@ -93,7 +93,7 @@ function crearEstilos(colors: Colors) {
     input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.sm, backgroundColor: colors.surface },
     error: { color: colors.red, marginBottom: spacing.sm },
     boton: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
-    textoBoton: { color: colors.surface, fontWeight: '700' },
+    textoBoton: { color: colors.onPrimary, fontWeight: '700' },
     lista: { paddingHorizontal: spacing.md },
     filaMovimiento: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.xs },
     fechaMovimiento: { color: colors.text3 },

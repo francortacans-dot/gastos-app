@@ -87,7 +87,7 @@ export default function GastoNuevo() {
                 onPress={() => setSectorId(sectorId === s.id ? null : s.id)}
                 style={[estilos.chip, { borderColor: s.color }, sectorId === s.id && { backgroundColor: s.color }]}
               >
-                <Text style={[estilos.textoChip, sectorId === s.id && { color: colors.surface }]}>{s.nombre}</Text>
+                <Text style={[estilos.textoChip, sectorId === s.id && { color: colors.onPrimary }]}>{s.nombre}</Text>
               </Pressable>
             ))}
           </View>
@@ -106,7 +106,7 @@ export default function GastoNuevo() {
                 onPress={() => setMetodoPago(metodoPago === m.valor ? null : m.valor)}
                 style={[estilos.chip, { borderColor: colors.border }, metodoPago === m.valor && { backgroundColor: colors.primary }]}
               >
-                <Text style={[estilos.textoChip, metodoPago === m.valor && { color: colors.surface }]}>{m.etiqueta}</Text>
+                <Text style={[estilos.textoChip, metodoPago === m.valor && { color: colors.onPrimary }]}>{m.etiqueta}</Text>
               </Pressable>
             ))}
           </View>
@@ -134,6 +134,6 @@ function crearEstilos(colors: Colors) {
     textoChip: { color: colors.text2 },
     inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
     botonGuardar: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center' },
-    textoBotonGuardar: { color: colors.surface, fontWeight: '700', fontSize: 16 },
+    textoBotonGuardar: { color: colors.onPrimary, fontWeight: '700', fontSize: 16 },
   });
 }

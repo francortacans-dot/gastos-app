@@ -178,7 +178,7 @@ export function PantallaAuth() {
 const estilos = StyleSheet.create({
   fondo: { flex: 1, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   marca: { alignItems: 'center', marginBottom: spacing.xl },
-  tituloMarca: { fontSize: 34, fontWeight: '700', color: colors.surface },
+  tituloMarca: { fontSize: 34, fontWeight: '700', color: colors.onPrimary },
   tagline: { fontSize: 14, color: colors.primaryLight, marginTop: spacing.xs },
   tarjeta: {
     width: '100%',
@@ -204,7 +204,7 @@ const estilos = StyleSheet.create({
   error: { color: colors.red, marginBottom: spacing.sm, textAlign: 'center' },
   mensaje: { color: colors.primaryDark, marginBottom: spacing.sm, textAlign: 'center' },
   boton: { backgroundColor: colors.primary, paddingVertical: spacing.sm, borderRadius: 10, alignItems: 'center', marginTop: spacing.xs },
-  textoBoton: { color: colors.surface, fontWeight: '600' },
+  textoBoton: { color: colors.onPrimary, fontWeight: '600' },
   enlaces: { marginTop: spacing.lg, alignItems: 'center', gap: spacing.sm },
   enlace: { color: colors.primary, fontWeight: '600' },
 });

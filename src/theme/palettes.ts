@@ -3,6 +3,8 @@ export interface Colors {
   primary: string;
   primaryDark: string;
   primaryLight: string;
+  /** Color de texto/íconos sobre una superficie coloreada con `primary` (botones, tarjeta hero). */
+  onPrimary: string;
 
   blue: string;
   blueLight: string;
@@ -48,6 +50,7 @@ export const palettes: Record<TemaId, Colors> = {
     primary: '#374151',
     primaryDark: '#1f2937',
     primaryLight: '#f3f4f6',
+    onPrimary: '#ffffff',
     blue: '#2563eb',
     blueLight: '#eff6ff',
     orange: '#f59e0b',
@@ -68,6 +71,7 @@ export const palettes: Record<TemaId, Colors> = {
     primary: '#8b5e34',
     primaryDark: '#5f3d1e',
     primaryLight: '#f3e6d8',
+    onPrimary: '#ffffff',
     blue: '#5b7c99',
     blueLight: '#eaf1f5',
     orange: '#c17a34',
@@ -88,6 +92,7 @@ export const palettes: Record<TemaId, Colors> = {
     primary: '#5c6b2e',
     primaryDark: '#3e4a1c',
     primaryLight: '#eef1e0',
+    onPrimary: '#ffffff',
     blue: '#4c6b6b',
     blueLight: '#e7eeed',
     orange: '#a97a2e',
@@ -108,6 +113,7 @@ export const palettes: Record<TemaId, Colors> = {
     primary: '#d98ea0',
     primaryDark: '#b5677c',
     primaryLight: '#fbeaf0',
+    onPrimary: '#ffffff',
     blue: '#7fb2c9',
     blueLight: '#eaf4f8',
     orange: '#c9a06a',
@@ -128,6 +134,7 @@ export const palettes: Record<TemaId, Colors> = {
     primary: '#3b82f6',
     primaryDark: '#1d4ed8',
     primaryLight: '#16233a',
+    onPrimary: '#ffffff',
     blue: '#60a5fa',
     blueLight: '#16233a',
     orange: '#f0b429',
