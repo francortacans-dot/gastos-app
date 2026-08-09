@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { TextInputTema as TextInput } from '../../src/components/text-input-tema';
+import { PantallaAnimada } from '../../src/components/pantalla-animada';
 import { useRouter } from 'expo-router';
 import { useApp } from '../../src/app-context';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
@@ -170,7 +171,7 @@ export default function Home() {
 
   if (esEscritorio) {
     return (
-      <View style={estilos.contenedorEscritorio}>
+      <PantallaAnimada style={estilos.contenedorEscritorio}>
         <ScrollView style={estilos.columnaIzquierda} contentContainerStyle={estilos.contenido}>
           {controles}
           {tarjetaResumen}
@@ -216,14 +217,15 @@ export default function Home() {
           </View>
         </ScrollView>
         {botonFlotante}
-      </View>
+      </PantallaAnimada>
     );
   }
 
   return (
-    <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
-      {controles}
-      {tarjetaResumen}
+    <PantallaAnimada>
+      <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+        {controles}
+        {tarjetaResumen}
 
       {porciones.length > 0 && (
         <View style={estilos.centrado}>
@@ -247,7 +249,8 @@ export default function Home() {
       </View>
 
       {botonFlotante}
-    </ScrollView>
+      </ScrollView>
+    </PantallaAnimada>
   );
 }
 

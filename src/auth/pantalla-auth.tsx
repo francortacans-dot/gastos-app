@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { iniciarSesion, crearCuenta, recuperarContrasena } from './email-auth';
 import { IconMail, IconLock } from '../components/icons';
+import { Toast } from '../components/toast';
 import { palettes } from '../theme/palettes';
 import { spacing } from '../theme/spacing';
 
@@ -160,8 +161,8 @@ export function PantallaAuth() {
           </View>
         )}
 
-        {error && <Text style={estilos.error}>{error}</Text>}
-        {mensaje && <Text style={estilos.mensaje}>{mensaje}</Text>}
+        <Toast texto={error} tipo="error" colors={colors} />
+        <Toast texto={mensaje} tipo="exito" colors={colors} />
 
         <Pressable style={estilos.boton} onPress={enviar} disabled={enviando}>
           <Text style={estilos.textoBoton}>
@@ -208,6 +209,7 @@ const estilos = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 20,
     padding: spacing.xl,
+    // boxShadow en vez de las props shadow*, que están deprecadas (ver app/(tabs)/index.tsx).
     boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
   },
   subtitulo: { fontSize: 16, fontWeight: '600', color: colors.text1, marginBottom: spacing.md, textAlign: 'center' },
@@ -223,8 +225,6 @@ const estilos = StyleSheet.create({
     backgroundColor: colors.surface2,
   },
   input: { flex: 1, padding: spacing.sm },
-  error: { color: colors.red, marginBottom: spacing.sm, textAlign: 'center' },
-  mensaje: { color: colors.primaryDark, marginBottom: spacing.sm, textAlign: 'center' },
   boton: { backgroundColor: colors.primary, paddingVertical: spacing.sm, borderRadius: 10, alignItems: 'center', marginTop: spacing.xs },
   textoBoton: { color: colors.onPrimary, fontWeight: '600' },
   enlaces: { marginTop: spacing.lg, alignItems: 'center', gap: spacing.sm },

@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, FlatList, StyleSheet } from 'react-native';
 import { TextInputTema as TextInput } from '../../src/components/text-input-tema';
+import { Toast } from '../../src/components/toast';
 import { useRouter } from 'expo-router';
+import { PantallaAnimada } from '../../src/components/pantalla-animada';
 import { useApp } from '../../src/app-context';
 import { useAhorros, useObjetivos } from '../../src/hooks/use-datos';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
@@ -25,11 +27,13 @@ export default function Ahorro() {
 
   const [montoTexto, setMontoTexto] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
 
   const totalAhorrado = movimientos.reduce((acc, m) => acc + m.centavosArs, 0);
   const movimientosOrdenados = [...movimientos].sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   async function mandarAAhorro() {
+    if (enviando) return;
     const centavos = parseAmountToCentavos(montoTexto);
     if (centavos === null || centavos <= 0) {
       setError('Ingresá un monto válido');
@@ -39,17 +43,22 @@ export default function Ahorro() {
       setError(`No podés mandar más de ${formatCentavos(resumen.acumuladoPrevio)} (tu acumulado disponible)`);
       return;
     }
-    await repos.savings.agregar({
-      centavosArs: centavos,
-      fecha: new Date().toISOString().slice(0, 10),
-      nota: null,
-    });
-    setMontoTexto('');
-    setError(null);
+    setEnviando(true);
+    try {
+      await repos.savings.agregar({
+        centavosArs: centavos,
+        fecha: new Date().toISOString().slice(0, 10),
+        nota: null,
+      });
+      setMontoTexto('');
+      setError(null);
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
-    <View style={estilos.contenedor}>
+    <PantallaAnimada style={estilos.contenedor}>
       <ScrollView contentContainerStyle={estilos.contenido}>
         <View style={estilos.tarjetaTotal}>
           <Text style={estilos.etiqueta}>Total ahorrado</Text>
@@ -100,9 +109,9 @@ export default function Ahorro() {
             keyboardType="decimal-pad"
             style={estilos.input}
           />
-          {error && <Text style={estilos.error}>{error}</Text>}
-          <Pressable style={estilos.boton} onPress={mandarAAhorro}>
-            <Text style={estilos.textoBoton}>Mandar a ahorro</Text>
+          <Toast texto={error} tipo="error" colors={colors} />
+          <Pressable style={[estilos.boton, enviando && estilos.botonDeshabilitado]} onPress={mandarAAhorro} disabled={enviando}>
+            <Text style={estilos.textoBoton}>{enviando ? 'Mandando...' : 'Mandar a ahorro'}</Text>
           </Pressable>
         </View>
 
@@ -123,7 +132,7 @@ export default function Ahorro() {
       <Pressable style={estilos.botonFlotante} onPress={() => router.push('/objetivo-nuevo')}>
         <IconPlus color={colors.onPrimary} size={26} />
       </Pressable>
-    </View>
+    </PantallaAnimada>
   );
 }
 
@@ -150,8 +159,8 @@ function crearEstilos(colors: Colors) {
     fechaObjetivo: { color: colors.text3, fontSize: 11, marginTop: 2 },
     formulario: { marginBottom: spacing.md },
     input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.sm, backgroundColor: colors.surface },
-    error: { color: colors.red, marginBottom: spacing.sm },
     boton: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
+    botonDeshabilitado: { opacity: 0.6 },
     textoBoton: { color: colors.onPrimary, fontWeight: '700' },
     filaMovimiento: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.xs },
     fechaMovimiento: { color: colors.text3 },

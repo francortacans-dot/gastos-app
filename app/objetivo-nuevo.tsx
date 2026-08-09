@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { TextInputTema as TextInput } from '../src/components/text-input-tema';
+import { Toast } from '../src/components/toast';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useApp } from '../src/app-context';
 import { useObjetivos } from '../src/hooks/use-datos';
@@ -94,7 +95,7 @@ export default function ObjetivoNuevo() {
         ))}
       </View>
 
-      {error && <Text style={estilos.error}>{error}</Text>}
+      <Toast texto={error} tipo="error" colors={colors} />
 
       <Pressable style={estilos.boton} onPress={guardar} disabled={guardando}>
         <Text style={estilos.textoBoton}>{guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear objetivo'}</Text>
@@ -119,7 +120,6 @@ function crearEstilos(colors: Colors) {
     chipActivo: { backgroundColor: colors.primary, borderColor: colors.primary },
     textoChip: { color: colors.text2, fontWeight: '600' },
     textoChipActivo: { color: colors.onPrimary },
-    error: { color: colors.red, marginTop: spacing.sm, textAlign: 'center' },
     boton: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center', marginTop: spacing.lg },
     textoBoton: { color: colors.onPrimary, fontWeight: '700', fontSize: 16 },
     botonBorrar: { alignItems: 'center', padding: spacing.md },

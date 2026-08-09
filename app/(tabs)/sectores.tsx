@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { PantallaAnimada } from '../../src/components/pantalla-animada';
 import { useApp } from '../../src/app-context';
 import { useSectores } from '../../src/hooks/use-datos';
 import { sectorPalette } from '../../src/theme/colors';
@@ -48,7 +49,7 @@ export default function Sectores() {
   }
 
   return (
-    <View style={estilos.contenedor}>
+    <PantallaAnimada style={estilos.contenedor}>
       <ScrollView contentContainerStyle={estilos.contenido}>
         {sectores.length === 0 ? (
           <Text style={estilos.vacio}>Todavía no cargaste sectores. Agregá uno de los sugeridos o creá el tuyo con el botón +.</Text>
@@ -73,7 +74,7 @@ export default function Sectores() {
       <Pressable style={estilos.botonFlotante} onPress={() => router.push('/sector-nuevo')}>
         <IconPlus color={colors.onPrimary} size={26} />
       </Pressable>
-    </View>
+    </PantallaAnimada>
   );
 }
 

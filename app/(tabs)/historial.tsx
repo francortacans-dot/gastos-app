@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, FlatList, StyleSheet } from 'react-native';
+import { PantallaAnimada } from '../../src/components/pantalla-animada';
 import { useApp } from '../../src/app-context';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
@@ -54,6 +55,7 @@ export default function Historial() {
   const gastosAMostrar = diaSeleccionado ? gastosDelMes.filter((g) => g.fecha === diaSeleccionado) : gastosDelMes;
 
   return (
+    <PantallaAnimada>
     <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
       <SelectorFecha
         mes={mes}
@@ -108,6 +110,7 @@ export default function Historial() {
         }
       />
     </ScrollView>
+    </PantallaAnimada>
   );
 }
 

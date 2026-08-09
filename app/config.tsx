@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { TextInputTema as TextInput } from '../src/components/text-input-tema';
+import { Toast } from '../src/components/toast';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '../src/auth/auth-context';
 import { crearCuenta, cambiarContrasena } from '../src/auth/email-auth';
@@ -33,6 +34,7 @@ export default function Configuracion() {
   const [pinNuevo, setPinNuevo] = useState('');
   const [errorPin, setErrorPin] = useState<string | null>(null);
   const [mensajePin, setMensajePin] = useState<string | null>(null);
+  const [guardandoPin, setGuardandoPin] = useState(false);
 
   async function crearCuentaConEmail() {
     if (!emailCuenta.trim() || passwordCuenta.length < 6) {
@@ -74,10 +76,15 @@ export default function Configuracion() {
       setErrorPin('El PIN tiene que ser de 4 dígitos');
       return;
     }
-    await gate.guardarPin(pinNuevo);
-    setErrorPin(null);
-    setMensajePin('PIN actualizado.');
-    setPinNuevo('');
+    setGuardandoPin(true);
+    try {
+      await gate.guardarPin(pinNuevo);
+      setErrorPin(null);
+      setMensajePin('PIN actualizado.');
+      setPinNuevo('');
+    } finally {
+      setGuardandoPin(false);
+    }
   }
 
   return (
@@ -113,10 +120,10 @@ export default function Configuracion() {
         maxLength={4}
         style={estilos.input}
       />
-      {errorPin && <Text style={estilos.error}>{errorPin}</Text>}
-      {mensajePin && <Text style={estilos.mensaje}>{mensajePin}</Text>}
-      <Pressable style={estilos.boton} onPress={guardarPinNuevo}>
-        <Text style={estilos.textoBoton}>Guardar PIN</Text>
+      <Toast texto={errorPin} tipo="error" colors={colors} />
+      <Toast texto={mensajePin} tipo="exito" colors={colors} />
+      <Pressable style={[estilos.boton, guardandoPin && estilos.botonDeshabilitado]} onPress={guardarPinNuevo} disabled={guardandoPin}>
+        <Text style={estilos.textoBoton}>{guardandoPin ? 'Guardando...' : 'Guardar PIN'}</Text>
       </Pressable>
 
       <Text style={estilos.seccionTitulo}>Cuenta</Text>
@@ -139,8 +146,8 @@ export default function Configuracion() {
             secureTextEntry
             style={estilos.input}
           />
-          {errorPassword && <Text style={estilos.error}>{errorPassword}</Text>}
-          {mensajePassword && <Text style={estilos.mensaje}>{mensajePassword}</Text>}
+          <Toast texto={errorPassword} tipo="error" colors={colors} />
+          <Toast texto={mensajePassword} tipo="exito" colors={colors} />
           <Pressable style={estilos.boton} onPress={cambiarContrasenaCuenta} disabled={cambiandoPassword}>
             <Text style={estilos.textoBoton}>{cambiandoPassword ? 'Guardando...' : 'Cambiar contraseña'}</Text>
           </Pressable>
@@ -169,7 +176,7 @@ export default function Configuracion() {
             secureTextEntry
             style={estilos.input}
           />
-          {errorCuenta && <Text style={estilos.error}>{errorCuenta}</Text>}
+          <Toast texto={errorCuenta} tipo="error" colors={colors} />
           <Pressable style={estilos.boton} onPress={crearCuentaConEmail} disabled={creandoCuenta}>
             <Text style={estilos.textoBoton}>{creandoCuenta ? 'Creando...' : 'Crear cuenta con email'}</Text>
           </Pressable>
@@ -185,9 +192,8 @@ function crearEstilos(colors: Colors) {
     seccionTitulo: { color: colors.text2, fontWeight: '700', marginTop: spacing.lg, marginBottom: spacing.sm, fontSize: 16 },
     subtitulo: { color: colors.text3, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.xs, fontSize: 13 },
     input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface, marginBottom: spacing.sm },
-    error: { color: colors.red, marginBottom: spacing.sm },
-    mensaje: { color: colors.primaryDark, marginBottom: spacing.sm },
     boton: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
+    botonDeshabilitado: { opacity: 0.6 },
     textoBoton: { color: colors.onPrimary, fontWeight: '700' },
     botonSecundario: { marginTop: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
     textoBotonSecundario: { color: colors.text2, fontWeight: '600' },

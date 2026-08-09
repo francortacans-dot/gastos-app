@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, type TextInput as TextInputRN } from 'react-native';
 import { TextInputTema as TextInput } from '../src/components/text-input-tema';
+import { Toast } from '../src/components/toast';
 import { usePinGateContext } from '../src/app-context/pin-gate-context';
 import { useAuth } from '../src/auth/auth-context';
 import { reautenticar } from '../src/auth/email-auth';
@@ -16,31 +17,40 @@ export default function PantallaPin() {
   const estilos = useMemo(() => crearEstilos(colors), [colors]);
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
 
   const [recuperando, setRecuperando] = useState(false);
   const [password, setPassword] = useState('');
   const [pinNuevo, setPinNuevo] = useState('');
   const [errorRecuperar, setErrorRecuperar] = useState<string | null>(null);
+  const [enviandoRecuperacion, setEnviandoRecuperacion] = useState(false);
   const refPinNuevo = useRef<TextInputRN>(null);
 
   const pinExistente = gate.pinGuardado;
   const puedeRecuperar = usuario && !usuario.isAnonymous;
 
   async function confirmar() {
+    if (enviando) return;
     if (!pinEsValido(pin)) {
       setError('El PIN tiene que ser de 4 dígitos');
       return;
     }
-    if (pinExistente) {
-      const ok = await gate.intentarDesbloquear(pin);
-      setError(ok ? null : 'PIN incorrecto');
-    } else {
-      await gate.guardarPin(pin);
+    setEnviando(true);
+    try {
+      if (pinExistente) {
+        const ok = await gate.intentarDesbloquear(pin);
+        setError(ok ? null : 'PIN incorrecto');
+      } else {
+        await gate.guardarPin(pin);
+      }
+      setPin('');
+    } finally {
+      setEnviando(false);
     }
-    setPin('');
   }
 
   async function confirmarRecuperacion() {
+    if (enviandoRecuperacion) return;
     if (!password) {
       setErrorRecuperar('Ingresá tu contraseña');
       return;
@@ -49,6 +59,7 @@ export default function PantallaPin() {
       setErrorRecuperar('El PIN nuevo tiene que ser de 4 dígitos');
       return;
     }
+    setEnviandoRecuperacion(true);
     try {
       await reautenticar(password);
       await gate.guardarPin(pinNuevo);
@@ -58,6 +69,8 @@ export default function PantallaPin() {
       setErrorRecuperar(null);
     } catch {
       setErrorRecuperar('Contraseña incorrecta');
+    } finally {
+      setEnviandoRecuperacion(false);
     }
   }
 
@@ -88,9 +101,9 @@ export default function PantallaPin() {
           returnKeyType="done"
           onSubmitEditing={confirmarRecuperacion}
         />
-        {errorRecuperar && <Text style={estilos.error}>{errorRecuperar}</Text>}
-        <Pressable style={estilos.boton} onPress={confirmarRecuperacion}>
-          <Text style={estilos.textoBoton}>Guardar PIN nuevo</Text>
+        <Toast texto={errorRecuperar} tipo="error" colors={colors} />
+        <Pressable style={[estilos.boton, enviandoRecuperacion && estilos.botonDeshabilitado]} onPress={confirmarRecuperacion} disabled={enviandoRecuperacion}>
+          <Text style={estilos.textoBoton}>{enviandoRecuperacion ? 'Un momento...' : 'Guardar PIN nuevo'}</Text>
         </Pressable>
         <Pressable onPress={() => setRecuperando(false)} style={estilos.enlaceContenedor}>
           <Text style={estilos.enlace}>Volver</Text>
@@ -113,9 +126,11 @@ export default function PantallaPin() {
         returnKeyType="done"
         onSubmitEditing={confirmar}
       />
-      {error && <Text style={estilos.error}>{error}</Text>}
-      <Pressable style={estilos.boton} onPress={confirmar}>
-        <Text style={estilos.textoBoton}>{pinExistente ? 'Entrar' : 'Guardar PIN'}</Text>
+      <Toast texto={error} tipo="error" colors={colors} />
+      <Pressable style={[estilos.boton, enviando && estilos.botonDeshabilitado]} onPress={confirmar} disabled={enviando}>
+        <Text style={estilos.textoBoton}>
+          {enviando ? 'Un momento...' : pinExistente ? 'Entrar' : 'Guardar PIN'}
+        </Text>
       </Pressable>
       {pinExistente && puedeRecuperar && (
         <Pressable onPress={() => setRecuperando(true)} style={estilos.enlaceContenedor}>
@@ -148,8 +163,8 @@ function crearEstilos(colors: Colors) {
       marginBottom: spacing.sm,
       backgroundColor: colors.surface,
     },
-    error: { color: colors.red, marginBottom: spacing.md },
     boton: { backgroundColor: colors.primary, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: 8 },
+    botonDeshabilitado: { opacity: 0.6 },
     textoBoton: { color: colors.onPrimary, fontWeight: '600' },
     enlaceContenedor: { marginTop: spacing.md },
     enlace: { color: colors.primary, fontWeight: '600' },

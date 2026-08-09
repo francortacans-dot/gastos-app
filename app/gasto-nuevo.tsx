@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { TextInputTema as TextInput } from '../src/components/text-input-tema';
+import { Toast } from '../src/components/toast';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/app-context';
 import { useSectores } from '../src/hooks/use-datos';
@@ -75,7 +76,7 @@ export default function GastoNuevo() {
         style={estilos.inputMonto}
         autoFocus
       />
-      {error && <Text style={estilos.error}>{error}</Text>}
+      <Toast texto={error} tipo="error" colors={colors} />
 
       <View style={estilos.opcionales}>
         <Text style={estilos.etiquetaCampo}>Sector</Text>
@@ -135,7 +136,6 @@ function crearEstilos(colors: Colors) {
     contenedor: { flex: 1, backgroundColor: colors.bg },
     contenido: { padding: spacing.lg },
     inputMonto: { fontSize: 40, fontWeight: '700', color: colors.text1, textAlign: 'center', marginBottom: spacing.sm },
-    error: { color: colors.red, textAlign: 'center', marginBottom: spacing.sm },
     opcionales: { marginTop: spacing.sm, marginBottom: spacing.lg },
     etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
     filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
