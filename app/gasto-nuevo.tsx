@@ -5,16 +5,19 @@ import { useRouter } from 'expo-router';
 import { useApp } from '../src/app-context';
 import { useSectores } from '../src/hooks/use-datos';
 import { parseAmountToCentavos } from '../src/domain/money';
-import type { PaymentMethod } from '../src/domain/types';
 import { useColors } from '../src/theme/theme-context';
 import type { Colors } from '../src/theme/palettes';
 import { spacing } from '../src/theme/spacing';
 
-const METODOS: { valor: PaymentMethod; etiqueta: string }[] = [
-  { valor: 'efectivo', etiqueta: 'Efectivo' },
-  { valor: 'debito', etiqueta: 'Débito' },
-  { valor: 'credito', etiqueta: 'Crédito' },
-  { valor: 'transferencia', etiqueta: 'Transferencia' },
+const METODOS_SUGERIDOS: string[] = [
+  'Efectivo',
+  'Débito',
+  'Crédito',
+  'Transferencia',
+  'Mercado Pago',
+  'Brubank',
+  'Ualá',
+  'Naranja X',
 ];
 
 export default function GastoNuevo() {
@@ -29,7 +32,8 @@ export default function GastoNuevo() {
   const [sectorId, setSectorId] = useState<string | null>(null);
   const [lugar, setLugar] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [metodoPago, setMetodoPago] = useState<PaymentMethod | null>(null);
+  const [metodoPago, setMetodoPago] = useState<string | null>(null);
+  const [metodoPersonalizado, setMetodoPersonalizado] = useState('');
   const [guardando, setGuardando] = useState(false);
 
   async function guardar() {
@@ -50,7 +54,7 @@ export default function GastoNuevo() {
         sectorId,
         lugar: lugar.trim() || null,
         descripcion: descripcion.trim() || null,
-        metodoPago,
+        metodoPago: metodoPersonalizado.trim() || metodoPago,
       });
       router.back();
     } finally {
@@ -95,16 +99,28 @@ export default function GastoNuevo() {
 
         <Text style={estilos.etiquetaCampo}>Método de pago</Text>
         <View style={estilos.filaChips}>
-          {METODOS.map((m) => (
+          {METODOS_SUGERIDOS.map((m) => (
             <Pressable
-              key={m.valor}
-              onPress={() => setMetodoPago(metodoPago === m.valor ? null : m.valor)}
-              style={[estilos.chip, { borderColor: colors.border }, metodoPago === m.valor && { backgroundColor: colors.primary }]}
+              key={m}
+              onPress={() => {
+                setMetodoPago(metodoPago === m ? null : m);
+                setMetodoPersonalizado('');
+              }}
+              style={[estilos.chip, { borderColor: colors.border }, metodoPago === m && { backgroundColor: colors.primary }]}
             >
-              <Text style={[estilos.textoChip, metodoPago === m.valor && { color: colors.onPrimary }]}>{m.etiqueta}</Text>
+              <Text style={[estilos.textoChip, metodoPago === m && { color: colors.onPrimary }]}>{m}</Text>
             </Pressable>
           ))}
         </View>
+        <TextInput
+          value={metodoPersonalizado}
+          onChangeText={(t) => {
+            setMetodoPersonalizado(t);
+            if (t) setMetodoPago(null);
+          }}
+          style={estilos.inputTexto}
+          placeholder="Otro medio de pago (opcional)"
+        />
       </View>
 
       <Pressable style={estilos.botonGuardar} onPress={guardar} disabled={guardando}>

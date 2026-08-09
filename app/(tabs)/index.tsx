@@ -15,7 +15,7 @@ import { formatCentavos, parseAmountToCentavos } from '../../src/domain/money';
 import { PieChart } from '../../src/components/pie-chart';
 import { SectorProgress } from '../../src/components/sector-progress';
 import { MoneyText } from '../../src/components/money-text';
-import { IconPlus, IconPencil, IconWallet } from '../../src/components/icons';
+import { IconPlus, IconPencil, IconWallet, IconTrash } from '../../src/components/icons';
 import { useColors } from '../../src/theme/theme-context';
 import type { Colors } from '../../src/theme/palettes';
 import { spacing } from '../../src/theme/spacing';
@@ -207,6 +207,9 @@ export default function Home() {
                     <Text style={estilos.fechaGasto}>{g.fecha}</Text>
                   </View>
                   <Text style={estilos.montoGastoFila}>{formatCentavos(g.centavosArs)}</Text>
+                  <Pressable onPress={() => repos.expenses.eliminar(g.id)} hitSlop={8} style={estilos.botonBorrarGasto}>
+                    <IconTrash color={colors.text4} size={16} />
+                  </Pressable>
                 </View>
               ))
             )}
@@ -304,7 +307,8 @@ function crearEstilos(colors: Colors) {
     porcentajeObjetivo: { color: colors.primaryDark, fontWeight: '700', fontSize: 13 },
     seccion: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.lg, marginBottom: spacing.md, ...sombra },
     vacio: { color: colors.text3 },
-    filaGasto: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },
+    filaGasto: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },
+    botonBorrarGasto: { padding: 4 },
     infoGasto: { flex: 1 },
     descripcionGasto: { color: colors.text1, fontWeight: '600' },
     fechaGasto: { color: colors.text3, fontSize: 12 },

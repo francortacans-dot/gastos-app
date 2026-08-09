@@ -36,6 +36,12 @@ export const temaLabels: Record<TemaId, string> = {
   oscuro: 'Oscuro',
 };
 
+/** Paleta efectiva según el tema elegido y si el modo noche está prendido. */
+export function obtenerColores(tema: TemaId, modoOscuro: boolean): Colors {
+  if (modoOscuro && tema !== 'oscuro') return paletasOscuras[tema];
+  return palettes[tema];
+}
+
 /** Color de muestra por tema, para pintar los swatches del selector en Configuración. */
 export const temaSwatch: Record<TemaId, string> = {
   gris: '#374151',
@@ -150,5 +156,98 @@ export const palettes: Record<TemaId, Colors> = {
     text2: '#cbd5e1',
     text3: '#94a3b8',
     text4: '#64748b',
+  },
+};
+
+/**
+ * Versión oscura de cada tema (salvo 'oscuro', que ya es oscuro de por sí):
+ * mantiene el color de acento de esa familia (más claro, para que siga
+ * contrastando sobre fondo oscuro) en vez de forzar un azul genérico.
+ * La usa ThemeProvider cuando el modo noche está prendido.
+ */
+export const paletasOscuras: Record<Exclude<TemaId, 'oscuro'>, Colors> = {
+  gris: {
+    primary: '#cbd5e1',
+    primaryDark: '#94a3b8',
+    primaryLight: '#1f2937',
+    onPrimary: '#111827',
+    blue: '#60a5fa',
+    blueLight: '#16233a',
+    orange: '#f0b429',
+    orangeLight: '#332a12',
+    red: '#f87171',
+    redLight: '#3a1a1a',
+    bg: '#101114',
+    surface: '#1a1b1f',
+    surface2: '#232428',
+    border: '#2c2d33',
+    borderDark: '#3a3b42',
+    text1: '#f4f4f5',
+    text2: '#d4d4d8',
+    text3: '#a1a1aa',
+    text4: '#71717a',
+  },
+  beige: {
+    primary: '#d9a066',
+    primaryDark: '#b5793d',
+    primaryLight: '#2c2013',
+    onPrimary: '#2c1c0d',
+    blue: '#7c9cb5',
+    blueLight: '#16202a',
+    orange: '#e0a052',
+    orangeLight: '#332714',
+    red: '#e08a6b',
+    redLight: '#3a2018',
+    bg: '#161210',
+    surface: '#201b17',
+    surface2: '#2a231e',
+    border: '#3a3128',
+    borderDark: '#4a3f33',
+    text1: '#f5eee6',
+    text2: '#d9c8b8',
+    text3: '#a8927d',
+    text4: '#786553',
+  },
+  oliva: {
+    primary: '#a8b878',
+    primaryDark: '#87975a',
+    primaryLight: '#242a17',
+    onPrimary: '#1f2412',
+    blue: '#7fa3a3',
+    blueLight: '#182222',
+    orange: '#cf9f52',
+    orangeLight: '#302510',
+    red: '#c67a5f',
+    redLight: '#331f16',
+    bg: '#14160f',
+    surface: '#1c1f16',
+    surface2: '#262a1c',
+    border: '#343824',
+    borderDark: '#454b30',
+    text1: '#f1f3e8',
+    text2: '#d5dac2',
+    text3: '#a3aa8a',
+    text4: '#767c5f',
+  },
+  pastel: {
+    primary: '#e3a3b3',
+    primaryDark: '#c47f92',
+    primaryLight: '#2e1e22',
+    onPrimary: '#2c161c',
+    blue: '#9dc6d8',
+    blueLight: '#182428',
+    orange: '#dbb98a',
+    orangeLight: '#2e2517',
+    red: '#e08f97',
+    redLight: '#331e21',
+    bg: '#171213',
+    surface: '#211a1c',
+    surface2: '#2b2224',
+    border: '#3b2f32',
+    borderDark: '#4c3d41',
+    text1: '#f6ecee',
+    text2: '#dcc6cb',
+    text3: '#ab8f95',
+    text4: '#7c6469',
   },
 };

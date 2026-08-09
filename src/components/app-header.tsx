@@ -20,7 +20,7 @@ export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const preferencias = usePreferences();
-  const modoNoche = preferencias.tema === 'oscuro';
+  const modoNoche = preferencias.modoOscuro;
 
   return (
     <View style={estilos.contenedor}>
@@ -28,7 +28,7 @@ export function AppHeader() {
         <Text style={estilos.titulo}>Mis gastos</Text>
         <View style={estilos.filaBotones}>
           <Pressable
-            onPress={() => preferencias.setTema(modoNoche ? 'gris' : 'oscuro')}
+            onPress={() => preferencias.setModoOscuro(!modoNoche)}
             style={estilos.botonConfig}
             hitSlop={8}
           >

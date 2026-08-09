@@ -9,9 +9,16 @@ interface Preferencias {
   monedaVisualizacion: 'ARS' | 'USD';
   cotizacionPreferida: RateKind;
   tema: TemaId;
+  /** Modo noche: aplica una variante oscura del `tema` elegido en vez de cambiar de tema. */
+  modoOscuro: boolean;
 }
 
-const DEFAULT: Preferencias = { monedaVisualizacion: 'ARS', cotizacionPreferida: 'oficial', tema: 'gris' };
+const DEFAULT: Preferencias = {
+  monedaVisualizacion: 'ARS',
+  cotizacionPreferida: 'oficial',
+  tema: 'gris',
+  modoOscuro: false,
+};
 
 export function usePreferences() {
   const { uid } = useApp();
@@ -26,6 +33,7 @@ export function usePreferences() {
         monedaVisualizacion: (datos.monedaVisualizacion as Preferencias['monedaVisualizacion']) ?? DEFAULT.monedaVisualizacion,
         cotizacionPreferida: (datos.cotizacionPreferida as RateKind) ?? DEFAULT.cotizacionPreferida,
         tema: (datos.tema as TemaId) ?? DEFAULT.tema,
+        modoOscuro: (datos.modoOscuro as boolean) ?? DEFAULT.modoOscuro,
       });
     });
   }, [uid]);
@@ -40,5 +48,6 @@ export function usePreferences() {
     setMonedaVisualizacion: (m: Preferencias['monedaVisualizacion']) => actualizar({ monedaVisualizacion: m }),
     setCotizacionPreferida: (c: RateKind) => actualizar({ cotizacionPreferida: c }),
     setTema: (t: TemaId) => actualizar({ tema: t }),
+    setModoOscuro: (m: boolean) => actualizar({ modoOscuro: m }),
   };
 }

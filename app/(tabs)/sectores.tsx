@@ -6,7 +6,7 @@ import { useSectores } from '../../src/hooks/use-datos';
 import { sectorPalette } from '../../src/theme/colors';
 import { SECTORES_SUGERIDOS } from '../../src/domain/sectores-sugeridos';
 import { formatCentavos } from '../../src/domain/money';
-import { IconPlus, IconPencil } from '../../src/components/icons';
+import { IconPlus, IconPencil, IconTrash } from '../../src/components/icons';
 import { useColors } from '../../src/theme/theme-context';
 import type { Colors } from '../../src/theme/palettes';
 import { spacing } from '../../src/theme/spacing';
@@ -29,16 +29,21 @@ export default function Sectores() {
 
   function renderSector(item: Sector) {
     return (
-      <Pressable key={item.id} style={estilos.fila} onPress={() => router.push(`/sector-nuevo?id=${item.id}`)}>
-        <View style={[estilos.punto, { backgroundColor: item.color }]} />
-        <View style={estilos.info}>
-          <Text style={estilos.nombreSector}>{item.nombre}</Text>
-          <Text style={estilos.limiteSector}>
-            {item.limiteMensual !== null ? `Límite: ${formatCentavos(item.limiteMensual)}` : 'Sin límite'}
-          </Text>
-        </View>
-        <IconPencil color={colors.text3} size={16} />
-      </Pressable>
+      <View key={item.id} style={estilos.fila}>
+        <Pressable style={estilos.filaInfo} onPress={() => router.push(`/sector-nuevo?id=${item.id}`)}>
+          <View style={[estilos.punto, { backgroundColor: item.color }]} />
+          <View style={estilos.info}>
+            <Text style={estilos.nombreSector}>{item.nombre}</Text>
+            <Text style={estilos.limiteSector}>
+              {item.limiteMensual !== null ? `Límite: ${formatCentavos(item.limiteMensual)}` : 'Sin límite'}
+            </Text>
+          </View>
+          <IconPencil color={colors.text3} size={16} />
+        </Pressable>
+        <Pressable onPress={() => repos.sectors.eliminar(item.id)} hitSlop={8} style={estilos.botonBorrar}>
+          <IconTrash color={colors.text4} size={16} />
+        </Pressable>
+      </View>
     );
   }
 
@@ -87,6 +92,8 @@ function crearEstilos(colors: Colors) {
       marginBottom: spacing.xs,
       boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
     },
+    filaInfo: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+    botonBorrar: { padding: 4, marginLeft: spacing.xs },
     punto: { width: 14, height: 14, borderRadius: 7, marginRight: spacing.sm },
     info: { flex: 1 },
     nombreSector: { color: colors.text1, fontWeight: '600' },

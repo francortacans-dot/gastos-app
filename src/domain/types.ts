@@ -1,6 +1,11 @@
 export type Currency = 'ARS' | 'USD';
 export type RateKind = 'oficial' | 'blue';
-export type PaymentMethod = 'efectivo' | 'debito' | 'credito' | 'transferencia';
+/**
+ * Medio de pago del gasto. Texto libre (no un enum cerrado): hay sugerencias
+ * comunes (efectivo, débito, Mercado Pago, Brubank, etc.) pero se puede
+ * escribir cualquier otro nombre.
+ */
+export type PaymentMethod = string;
 
 /** Clave de mes en formato 'YYYY-MM'. */
 export type MonthKey = string;

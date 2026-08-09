@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, FlatList, StyleSheet } from 'react-native';
+import { useApp } from '../../src/app-context';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
 import { useSectores, useGastos } from '../../src/hooks/use-datos';
@@ -8,6 +9,7 @@ import { PieChart } from '../../src/components/pie-chart';
 import { BarChart, type BarraDato } from '../../src/components/bar-chart';
 import { SelectorFecha } from '../../src/components/selector-fecha';
 import { MoneyText } from '../../src/components/money-text';
+import { IconTrash } from '../../src/components/icons';
 import { formatCentavos } from '../../src/domain/money';
 import { useColors } from '../../src/theme/theme-context';
 import type { Colors } from '../../src/theme/palettes';
@@ -20,6 +22,7 @@ function etiquetaCortaDeMes(mesClave: string): string {
 }
 
 export default function Historial() {
+  const { repos } = useApp();
   const { mes, irAMes } = useMesActual();
   const resumen = useResumenMes(mes);
   const sectores = useSectores();
@@ -90,11 +93,14 @@ export default function Historial() {
         scrollEnabled={false}
         renderItem={({ item }) => (
           <View style={estilos.filaGasto}>
-            <View>
+            <View style={estilos.infoGasto}>
               <Text style={estilos.descripcionGasto}>{item.descripcion ?? item.lugar ?? 'Gasto sin descripción'}</Text>
               <Text style={estilos.fechaGasto}>{item.fecha}</Text>
             </View>
             <Text style={estilos.montoGasto}>{formatCentavos(item.centavosArs)}</Text>
+            <Pressable onPress={() => repos.expenses.eliminar(item.id)} hitSlop={8} style={estilos.botonBorrar}>
+              <IconTrash color={colors.text4} size={16} />
+            </Pressable>
           </View>
         )}
         ListEmptyComponent={
@@ -119,10 +125,12 @@ function crearEstilos(colors: Colors) {
     centrado: { alignItems: 'center', marginBottom: spacing.md },
     filaTituloLista: { marginBottom: spacing.sm },
     limpiarFiltro: { color: colors.primary, fontWeight: '600', fontSize: 13 },
-    filaGasto: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.xs },
+    filaGasto: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.xs, gap: spacing.xs },
+    infoGasto: { flex: 1 },
     descripcionGasto: { color: colors.text1, fontWeight: '600' },
     fechaGasto: { color: colors.text3, fontSize: 12 },
     montoGasto: { color: colors.text1, fontWeight: '700' },
+    botonBorrar: { padding: 4 },
     vacio: { color: colors.text3, textAlign: 'center', marginTop: spacing.md },
   });
 }
