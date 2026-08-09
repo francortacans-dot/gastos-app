@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { TextInputTema as TextInput } from '../src/components/text-input-tema';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '../src/auth/auth-context';
 import { crearCuenta, cambiarContrasena } from '../src/auth/email-auth';

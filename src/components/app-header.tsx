@@ -2,9 +2,10 @@ import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useColors } from '../theme/theme-context';
+import { usePreferences } from '../preferences/use-preferences';
 import type { Colors } from '../theme/palettes';
 import { spacing } from '../theme/spacing';
-import { IconHome, IconHistorial, IconSectores, IconAhorro, IconSettings, type IconProps } from './icons';
+import { IconHome, IconHistorial, IconSectores, IconAhorro, IconSettings, IconMoon, IconSun, type IconProps } from './icons';
 
 const TABS: { href: '/' | '/historial' | '/sectores' | '/ahorro'; label: string; Icon: (p: IconProps) => React.ReactElement }[] = [
   { href: '/', label: 'Inicio', Icon: IconHome },
@@ -18,14 +19,25 @@ export function AppHeader() {
   const estilos = useMemo(() => crearEstilos(colors), [colors]);
   const router = useRouter();
   const pathname = usePathname();
+  const preferencias = usePreferences();
+  const modoNoche = preferencias.tema === 'oscuro';
 
   return (
     <View style={estilos.contenedor}>
       <View style={estilos.filaTitulo}>
         <Text style={estilos.titulo}>Mis gastos</Text>
-        <Pressable onPress={() => router.push('/config')} style={estilos.botonConfig} hitSlop={8}>
-          <IconSettings color={colors.text1} size={24} />
-        </Pressable>
+        <View style={estilos.filaBotones}>
+          <Pressable
+            onPress={() => preferencias.setTema(modoNoche ? 'gris' : 'oscuro')}
+            style={estilos.botonConfig}
+            hitSlop={8}
+          >
+            {modoNoche ? <IconSun color={colors.text1} size={22} /> : <IconMoon color={colors.text1} size={22} />}
+          </Pressable>
+          <Pressable onPress={() => router.push('/config')} style={estilos.botonConfig} hitSlop={8}>
+            <IconSettings color={colors.text1} size={24} />
+          </Pressable>
+        </View>
       </View>
       <View style={estilos.filaTabs}>
         {TABS.map(({ href, label, Icon }) => {
@@ -58,6 +70,7 @@ function crearEstilos(colors: Colors) {
       paddingBottom: spacing.sm,
     },
     titulo: { fontSize: 22, fontWeight: '700', color: colors.primary },
+    filaBotones: { flexDirection: 'row', gap: spacing.xs },
     botonConfig: {
       width: 40,
       height: 40,

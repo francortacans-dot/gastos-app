@@ -1,14 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { TextInputTema as TextInput } from '../../src/components/text-input-tema';
 import { useRouter } from 'expo-router';
 import { useApp } from '../../src/app-context';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
-import { useSectores } from '../../src/hooks/use-datos';
+import { useSectores, useObjetivos } from '../../src/hooks/use-datos';
 import { useGastos } from '../../src/hooks/use-datos';
 import { useCotizacionActual } from '../../src/hooks/use-cotizacion-actual';
 import { usePreferences } from '../../src/preferences/use-preferences';
 import { gastadoPorSector, SIN_SECTOR } from '../../src/domain/budget';
+import { elegirObjetivoDestacado, porcentajeObjetivo } from '../../src/domain/objetivos';
 import { formatCentavos, parseAmountToCentavos } from '../../src/domain/money';
 import { PieChart } from '../../src/components/pie-chart';
 import { SectorProgress } from '../../src/components/sector-progress';
@@ -25,6 +27,7 @@ export default function Home() {
   const { mes } = useMesActual();
   const resumen = useResumenMes(mes);
   const sectores = useSectores();
+  const objetivos = useObjetivos();
   const gastos = useGastos();
   const preferencias = usePreferences();
   const cotizacion = useCotizacionActual(preferencias.cotizacionPreferida);
@@ -54,6 +57,7 @@ export default function Home() {
   ].filter((p) => p.valor > 0);
 
   const ultimosGastos = [...gastos].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 6);
+  const objetivoDestacado = elegirObjetivoDestacado(objetivos);
 
   const controles = (
     <View style={estilos.filaControles}>
@@ -68,18 +72,21 @@ export default function Home() {
           </Pressable>
         ))}
       </View>
-      <View style={estilos.grupoChip}>
-        {(['oficial', 'blue'] as const).map((c) => (
-          <Pressable
-            key={c}
-            onPress={() => preferencias.setCotizacionPreferida(c)}
-            style={[estilos.chip, preferencias.cotizacionPreferida === c && estilos.chipActivo]}
-          >
-            <Text style={[estilos.textoChip, preferencias.cotizacionPreferida === c && estilos.textoChipActivo]}>
-              {c === 'oficial' ? 'Oficial' : 'Blue'}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={estilos.grupoCotizacion}>
+        <View style={estilos.grupoChip}>
+          {(['oficial', 'blue'] as const).map((c) => (
+            <Pressable
+              key={c}
+              onPress={() => preferencias.setCotizacionPreferida(c)}
+              style={[estilos.chip, preferencias.cotizacionPreferida === c && estilos.chipActivo]}
+            >
+              <Text style={[estilos.textoChip, preferencias.cotizacionPreferida === c && estilos.textoChipActivo]}>
+                {c === 'oficial' ? 'Oficial' : 'Blue'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        {cotizacion && <Text style={estilos.textoCotizacion}>$ {cotizacion.venta.toLocaleString('es-AR')}</Text>}
       </View>
     </View>
   );
@@ -137,6 +144,24 @@ export default function Home() {
     </View>
   );
 
+  const tarjetaObjetivo = objetivoDestacado && (
+    <Pressable style={estilos.tarjetaObjetivo} onPress={() => router.push('/(tabs)/ahorro')}>
+      <View style={estilos.filaObjetivoTitulo}>
+        <Text style={estilos.etiquetaObjetivo}>Próximo objetivo</Text>
+        <Text style={estilos.nombreObjetivo}>{objetivoDestacado.nombre}</Text>
+      </View>
+      <View style={estilos.barraFondoObjetivo}>
+        <View style={[estilos.barraRellenoObjetivo, { width: `${porcentajeObjetivo(objetivoDestacado)}%` }]} />
+      </View>
+      <View style={estilos.filaObjetivoTitulo}>
+        <Text style={estilos.montoObjetivo}>
+          {formatCentavos(objetivoDestacado.montoActualCentavos)} de {formatCentavos(objetivoDestacado.montoMetaCentavos)}
+        </Text>
+        <Text style={estilos.porcentajeObjetivo}>{porcentajeObjetivo(objetivoDestacado)}%</Text>
+      </View>
+    </Pressable>
+  );
+
   const botonFlotante = (
     <Pressable style={estilos.botonFlotante} onPress={() => router.push('/gasto-nuevo')}>
       <IconPlus color={colors.onPrimary} size={26} />
@@ -156,6 +181,7 @@ export default function Home() {
           )}
         </ScrollView>
         <ScrollView style={estilos.columnaDerecha} contentContainerStyle={estilos.contenido}>
+          {tarjetaObjetivo}
           <Text style={estilos.seccionTitulo}>Sectores</Text>
           <View style={estilos.seccion}>
             {sectores.length === 0 ? (
@@ -202,6 +228,8 @@ export default function Home() {
         </View>
       )}
 
+      {tarjetaObjetivo}
+
       <Text style={estilos.seccionTitulo}>Sectores</Text>
       <View style={estilos.seccion}>
         {sectores.length === 0 ? (
@@ -227,7 +255,9 @@ function crearEstilos(colors: Colors) {
   return StyleSheet.create({
     contenedor: { flex: 1, backgroundColor: colors.bg },
     contenido: { padding: spacing.md, paddingBottom: spacing.xxl * 2 },
-    filaControles: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.md },
+    filaControles: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.md },
+    grupoCotizacion: { alignItems: 'flex-end', gap: 4 },
+    textoCotizacion: { color: colors.text3, fontSize: 12, fontWeight: '600' },
     grupoChip: { flexDirection: 'row', backgroundColor: colors.surface2, borderRadius: 20, padding: 3 },
     chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: 17 },
     chipActivo: { backgroundColor: colors.primary },
@@ -264,6 +294,14 @@ function crearEstilos(colors: Colors) {
     chipAcumulado: { marginTop: spacing.sm, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
     textoChipAcumulado: { color: colors.onPrimary, fontWeight: '600' },
     centrado: { alignItems: 'center', marginBottom: spacing.md },
+    tarjetaObjetivo: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, ...sombra },
+    filaObjetivoTitulo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    etiquetaObjetivo: { color: colors.text3, fontSize: 12 },
+    nombreObjetivo: { color: colors.text1, fontWeight: '700' },
+    barraFondoObjetivo: { height: 8, borderRadius: 4, backgroundColor: colors.surface2, overflow: 'hidden', marginVertical: spacing.xs },
+    barraRellenoObjetivo: { height: '100%', borderRadius: 4, backgroundColor: colors.primary },
+    montoObjetivo: { color: colors.text2, fontSize: 13 },
+    porcentajeObjetivo: { color: colors.primaryDark, fontWeight: '700', fontSize: 13 },
     seccion: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.lg, marginBottom: spacing.md, ...sombra },
     vacio: { color: colors.text3 },
     filaGasto: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },

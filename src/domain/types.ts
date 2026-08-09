@@ -45,3 +45,16 @@ export interface SavingMovement {
   fecha: string;
   nota: string | null;
 }
+
+export type TamanoObjetivo = 'chico' | 'mediano' | 'grande';
+
+/** Objetivo de ahorro con nombre propio (tipo "cajitas"), independiente del ahorro general. */
+export interface Objetivo {
+  id: string;
+  nombre: string;
+  montoMetaCentavos: number;
+  montoActualCentavos: number;
+  /** Fecha ISO 'YYYY-MM-DD'. null = sin fecha objetivo. */
+  fechaObjetivo: string | null;
+  tamano: TamanoObjetivo;
+}

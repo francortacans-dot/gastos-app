@@ -5,12 +5,14 @@ import { crearExpenseRepo, type ExpenseRepo } from './expense-repo';
 import { crearSectorRepo, type SectorRepo } from './sector-repo';
 import { crearBudgetRepo, type BudgetRepo } from './budget-repo';
 import { crearSavingsRepo, type SavingsRepo } from './savings-repo';
+import { crearGoalRepo, type GoalRepo } from './goal-repo';
 
 export interface Repos {
   expenses: ExpenseRepo;
   sectors: SectorRepo;
   budgets: BudgetRepo;
   savings: SavingsRepo;
+  goals: GoalRepo;
 }
 
 let estadoConexion = true;
@@ -30,5 +32,6 @@ export function crearRepos(uid: string): Repos {
     sectors: crearSectorRepo(deps),
     budgets: crearBudgetRepo(deps),
     savings: crearSavingsRepo(deps),
+    goals: crearGoalRepo(deps),
   };
 }

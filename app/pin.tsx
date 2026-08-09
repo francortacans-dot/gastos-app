@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { TextInputTema as TextInput } from '../src/components/text-input-tema';
 import { usePinGateContext } from '../src/app-context/pin-gate-context';
 import { useAuth } from '../src/auth/auth-context';
 import { reautenticar } from '../src/auth/email-auth';

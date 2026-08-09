@@ -1,6 +1,6 @@
 import { useApp } from '../app-context';
 import { useCollection } from './use-collection';
-import type { Expense, Sector, Budget, SavingMovement } from '../domain/types';
+import type { Expense, Sector, Budget, SavingMovement, Objetivo } from '../domain/types';
 
 export function useGastos(): Expense[] {
   const { repos } = useApp();
@@ -20,4 +20,9 @@ export function usePresupuestos(): Budget[] {
 export function useAhorros(): SavingMovement[] {
   const { repos } = useApp();
   return useCollection<SavingMovement>({ listar: () => repos.savings.listar(), suscribir: (cb) => repos.savings.suscribir(cb) });
+}
+
+export function useObjetivos(): Objetivo[] {
+  const { repos } = useApp();
+  return useCollection<Objetivo>({ listar: () => repos.goals.listar(), suscribir: (cb) => repos.goals.suscribir(cb) });
 }

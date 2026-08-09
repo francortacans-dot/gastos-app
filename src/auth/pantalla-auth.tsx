@@ -103,6 +103,7 @@ export function PantallaAuth() {
         <View style={estilos.campo}>
           <IconMail color={colors.text3} size={18} />
           <TextInput
+            placeholderTextColor={colors.text4}
             value={email}
             onChangeText={setEmail}
             placeholder="Email"
@@ -116,6 +117,7 @@ export function PantallaAuth() {
           <View style={estilos.campo}>
             <IconLock color={colors.text3} size={18} />
             <TextInput
+            placeholderTextColor={colors.text4}
               value={password}
               onChangeText={setPassword}
               placeholder="Contraseña"
@@ -129,6 +131,7 @@ export function PantallaAuth() {
           <View style={estilos.campo}>
             <IconLock color={colors.text3} size={18} />
             <TextInput
+            placeholderTextColor={colors.text4}
               value={confirmarPassword}
               onChangeText={setConfirmarPassword}
               placeholder="Repetí la contraseña"
