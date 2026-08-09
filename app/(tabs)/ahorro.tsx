@@ -128,16 +128,18 @@ export default function Ahorro() {
 }
 
 function crearEstilos(colors: Colors) {
+  const sombra = { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as const;
+
   return StyleSheet.create({
     contenedor: { flex: 1, backgroundColor: colors.bg },
     contenido: { padding: spacing.md, paddingBottom: spacing.xxl * 2 },
-    tarjetaTotal: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.lg, marginBottom: spacing.md },
+    tarjetaTotal: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.lg, marginBottom: spacing.md, ...sombra },
     etiqueta: { color: colors.text3, marginTop: spacing.xs },
     montoGrande: { fontSize: 28, fontWeight: '700', color: colors.text1 },
     tituloSeccion: { color: colors.text2, fontWeight: '700', fontSize: 16, marginBottom: spacing.sm },
     vacio: { color: colors.text3, textAlign: 'center', marginBottom: spacing.md },
     listaObjetivos: { marginBottom: spacing.md },
-    tarjetaObjetivo: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, marginBottom: spacing.xs },
+    tarjetaObjetivo: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, marginBottom: spacing.xs, ...sombra },
     filaObjetivo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     nombreObjetivo: { color: colors.text1, fontWeight: '700' },
     tamanoObjetivo: { color: colors.text3, fontSize: 11, textTransform: 'uppercase' },

@@ -3,14 +3,21 @@ import { View, Text, ScrollView, Pressable, FlatList, StyleSheet } from 'react-n
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
 import { useSectores, useGastos } from '../../src/hooks/use-datos';
-import { gastadoPorSector } from '../../src/domain/budget';
+import { gastadoPorSector, gastadoEnMes, mesAnterior } from '../../src/domain/budget';
 import { PieChart } from '../../src/components/pie-chart';
+import { BarChart, type BarraDato } from '../../src/components/bar-chart';
 import { SelectorFecha } from '../../src/components/selector-fecha';
 import { MoneyText } from '../../src/components/money-text';
 import { formatCentavos } from '../../src/domain/money';
 import { useColors } from '../../src/theme/theme-context';
 import type { Colors } from '../../src/theme/palettes';
 import { spacing } from '../../src/theme/spacing';
+
+function etiquetaCortaDeMes(mesClave: string): string {
+  const [anio, mesNum] = mesClave.split('-').map(Number);
+  const texto = new Date(anio, mesNum - 1, 1).toLocaleDateString('es-AR', { month: 'short' });
+  return texto.charAt(0).toUpperCase() + texto.slice(1).replace('.', '');
+}
 
 export default function Historial() {
   const { mes, irAMes } = useMesActual();
@@ -20,6 +27,16 @@ export default function Historial() {
   const colors = useColors();
   const estilos = useMemo(() => crearEstilos(colors), [colors]);
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
+
+  const tendencia: BarraDato[] = useMemo(() => {
+    const meses: string[] = [mes];
+    for (let i = 0; i < 5; i++) meses.unshift(mesAnterior(meses[0]));
+    return meses.map((m) => ({
+      etiqueta: etiquetaCortaDeMes(m),
+      valor: gastadoEnMes(gastos, m),
+      destacada: m === mes,
+    }));
+  }, [gastos, mes]);
 
   const gastoPorSector = gastadoPorSector(gastos, mes);
   const porciones = sectores
@@ -48,6 +65,11 @@ export default function Historial() {
         <MoneyText centavos={resumen.presupuestoDelMes} moneda="ARS" style={estilos.monto} />
         <Text style={estilos.etiqueta}>Gastado</Text>
         <MoneyText centavos={resumen.gastado} moneda="ARS" style={estilos.monto} />
+      </View>
+
+      <View style={estilos.tarjetaTendencia}>
+        <Text style={estilos.tituloTendencia}>Últimos 6 meses</Text>
+        <BarChart datos={tendencia} />
       </View>
 
       {porciones.length > 0 && !diaSeleccionado && (
@@ -84,12 +106,16 @@ export default function Historial() {
 }
 
 function crearEstilos(colors: Colors) {
+  const sombra = { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as const;
+
   return StyleSheet.create({
     contenedor: { flex: 1, backgroundColor: colors.bg },
     contenido: { padding: spacing.md },
-    tarjetaResumen: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md },
+    tarjetaResumen: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, ...sombra },
     etiqueta: { color: colors.text3, marginTop: spacing.xs },
     monto: { fontSize: 20, fontWeight: '700', color: colors.text1 },
+    tarjetaTendencia: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, ...sombra },
+    tituloTendencia: { color: colors.text2, fontWeight: '700', fontSize: 14, marginBottom: spacing.sm },
     centrado: { alignItems: 'center', marginBottom: spacing.md },
     filaTituloLista: { marginBottom: spacing.sm },
     limpiarFiltro: { color: colors.primary, fontWeight: '600', fontSize: 13 },
