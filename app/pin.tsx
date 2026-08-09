@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, type TextInput as TextInputRN } from 'react-native';
 import { TextInputTema as TextInput } from '../src/components/text-input-tema';
 import { usePinGateContext } from '../src/app-context/pin-gate-context';
 import { useAuth } from '../src/auth/auth-context';
@@ -21,6 +21,7 @@ export default function PantallaPin() {
   const [password, setPassword] = useState('');
   const [pinNuevo, setPinNuevo] = useState('');
   const [errorRecuperar, setErrorRecuperar] = useState<string | null>(null);
+  const refPinNuevo = useRef<TextInputRN>(null);
 
   const pinExistente = gate.pinGuardado;
   const puedeRecuperar = usuario && !usuario.isAnonymous;
@@ -71,8 +72,12 @@ export default function PantallaPin() {
           secureTextEntry
           style={estilos.inputAncho}
           autoFocus
+          returnKeyType="next"
+          onSubmitEditing={() => refPinNuevo.current?.focus()}
+          blurOnSubmit={false}
         />
         <TextInput
+          ref={refPinNuevo}
           value={pinNuevo}
           onChangeText={(t) => setPinNuevo(t.replace(/\D/g, '').slice(0, 4))}
           placeholder="PIN nuevo de 4 dígitos"
@@ -80,6 +85,8 @@ export default function PantallaPin() {
           secureTextEntry
           maxLength={4}
           style={estilos.inputAncho}
+          returnKeyType="done"
+          onSubmitEditing={confirmarRecuperacion}
         />
         {errorRecuperar && <Text style={estilos.error}>{errorRecuperar}</Text>}
         <Pressable style={estilos.boton} onPress={confirmarRecuperacion}>
@@ -103,6 +110,8 @@ export default function PantallaPin() {
         maxLength={4}
         style={estilos.input}
         autoFocus
+        returnKeyType="done"
+        onSubmitEditing={confirmar}
       />
       {error && <Text style={estilos.error}>{error}</Text>}
       <Pressable style={estilos.boton} onPress={confirmar}>

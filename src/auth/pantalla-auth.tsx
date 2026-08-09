@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { iniciarSesion, crearCuenta, recuperarContrasena } from './email-auth';
 import { IconMail, IconLock } from '../components/icons';
@@ -35,6 +35,9 @@ export function PantallaAuth() {
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  const refPassword = useRef<TextInput>(null);
+  const refConfirmarPassword = useRef<TextInput>(null);
 
   function cambiarModo(nuevo: Modo) {
     setModo(nuevo);
@@ -110,6 +113,12 @@ export function PantallaAuth() {
             keyboardType="email-address"
             autoCapitalize="none"
             style={estilos.input}
+            returnKeyType={modo === 'recuperar' ? 'send' : 'next'}
+            onSubmitEditing={() => {
+              if (modo === 'recuperar') enviar();
+              else refPassword.current?.focus();
+            }}
+            blurOnSubmit={modo === 'recuperar'}
           />
         </View>
 
@@ -118,11 +127,18 @@ export function PantallaAuth() {
             <IconLock color={colors.text3} size={18} />
             <TextInput
             placeholderTextColor={colors.text4}
+              ref={refPassword}
               value={password}
               onChangeText={setPassword}
               placeholder="Contraseña"
               secureTextEntry
               style={estilos.input}
+              returnKeyType={modo === 'registro' ? 'next' : 'done'}
+              onSubmitEditing={() => {
+                if (modo === 'registro') refConfirmarPassword.current?.focus();
+                else enviar();
+              }}
+              blurOnSubmit={modo !== 'registro'}
             />
           </View>
         )}
@@ -132,11 +148,14 @@ export function PantallaAuth() {
             <IconLock color={colors.text3} size={18} />
             <TextInput
             placeholderTextColor={colors.text4}
+              ref={refConfirmarPassword}
               value={confirmarPassword}
               onChangeText={setConfirmarPassword}
               placeholder="Repetí la contraseña"
               secureTextEntry
               style={estilos.input}
+              returnKeyType="done"
+              onSubmitEditing={enviar}
             />
           </View>
         )}
