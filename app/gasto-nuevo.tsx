@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { TextInputTema as TextInput } from '../src/components/text-input-tema';
 import { Toast } from '../src/components/toast';
+import { BottomSheet } from '../src/components/bottom-sheet';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/app-context';
 import { useSectores } from '../src/hooks/use-datos';
@@ -64,7 +65,7 @@ export default function GastoNuevo() {
   }
 
   return (
-    <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+    <BottomSheet titulo="Nuevo gasto" onCerrar={() => router.back()}>
       <TextInput
         value={montoTexto}
         onChangeText={(t) => {
@@ -127,14 +128,12 @@ export default function GastoNuevo() {
       <Pressable style={estilos.botonGuardar} onPress={guardar} disabled={guardando}>
         <Text style={estilos.textoBotonGuardar}>{guardando ? 'Guardando...' : 'Guardar gasto'}</Text>
       </Pressable>
-    </ScrollView>
+    </BottomSheet>
   );
 }
 
 function crearEstilos(colors: Colors) {
   return StyleSheet.create({
-    contenedor: { flex: 1, backgroundColor: colors.bg },
-    contenido: { padding: spacing.lg },
     inputMonto: { fontSize: 40, fontWeight: '700', color: colors.text1, textAlign: 'center', marginBottom: spacing.sm },
     opcionales: { marginTop: spacing.sm, marginBottom: spacing.lg },
     etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },

@@ -174,6 +174,15 @@ export function IconSun({ color, size = 20 }: IconProps) {
   );
 }
 
+export function IconClose({ color, size = 20 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Line x1={6} y1={6} x2={18} y2={18} stroke={color} strokeWidth={STROKE} strokeLinecap="round" />
+      <Line x1={18} y1={6} x2={6} y2={18} stroke={color} strokeWidth={STROKE} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export function IconTrash({ color, size = 16 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

@@ -49,39 +49,9 @@ function StackConTema() {
     <Stack screenOptions={{ headerShown: false, animation: 'fade', animationDuration: 180 }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="pin" />
-      <Stack.Screen
-        name="gasto-nuevo"
-        options={{
-          presentation: 'modal',
-          headerShown: true,
-          title: 'Nuevo gasto',
-          headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.text1,
-          headerLeft: () => <BotonVolver />,
-        }}
-      />
-      <Stack.Screen
-        name="sector-nuevo"
-        options={{
-          presentation: 'modal',
-          headerShown: true,
-          title: 'Sector',
-          headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.text1,
-          headerLeft: () => <BotonVolver />,
-        }}
-      />
-      <Stack.Screen
-        name="objetivo-nuevo"
-        options={{
-          presentation: 'modal',
-          headerShown: true,
-          title: 'Objetivo de ahorro',
-          headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.text1,
-          headerLeft: () => <BotonVolver />,
-        }}
-      />
+      <Stack.Screen name="gasto-nuevo" options={{ headerShown: false, animation: 'none' }} />
+      <Stack.Screen name="sector-nuevo" options={{ headerShown: false, animation: 'none' }} />
+      <Stack.Screen name="objetivo-nuevo" options={{ headerShown: false, animation: 'none' }} />
       <Stack.Screen
         name="config"
         options={{
