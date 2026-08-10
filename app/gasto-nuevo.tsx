@@ -137,7 +137,7 @@ function crearEstilos(colors: Colors) {
     inputMonto: { fontSize: 40, fontWeight: '700', color: colors.text1, textAlign: 'center', marginBottom: spacing.sm },
     opcionales: { marginTop: spacing.sm, marginBottom: spacing.lg },
     etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
-    filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
     chip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
     textoChip: { color: colors.text2 },
     inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },

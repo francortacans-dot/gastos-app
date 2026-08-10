@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
+import { signOut } from 'firebase/auth';
+import { getFirebaseAuth } from '../firebase/app';
 import { useColors } from '../theme/theme-context';
 import { usePreferences } from '../preferences/use-preferences';
 import type { Colors } from '../theme/palettes';
 import { spacing } from '../theme/spacing';
-import { IconHome, IconHistorial, IconSectores, IconAhorro, IconSettings, IconMoon, IconSun, type IconProps } from './icons';
+import { IconHome, IconHistorial, IconSectores, IconAhorro, IconSettings, IconMoon, IconSun, IconLogout, type IconProps } from './icons';
 
 const TABS: { href: '/' | '/historial' | '/sectores' | '/ahorro'; label: string; Icon: (p: IconProps) => React.ReactElement }[] = [
   { href: '/', label: 'Inicio', Icon: IconHome },
@@ -25,7 +27,12 @@ export function AppHeader() {
   return (
     <View style={estilos.contenedor}>
       <View style={estilos.filaTitulo}>
-        <Text style={estilos.titulo}>Mis gastos</Text>
+        <View style={estilos.filaBotones}>
+          <Pressable onPress={() => signOut(getFirebaseAuth())} style={estilos.botonConfig} hitSlop={8}>
+            <IconLogout color={colors.text1} size={20} />
+          </Pressable>
+          <Text style={estilos.titulo}>Mis gastos</Text>
+        </View>
         <View style={estilos.filaBotones}>
           <Pressable
             onPress={() => preferencias.setModoOscuro(!modoNoche)}
@@ -70,7 +77,7 @@ function crearEstilos(colors: Colors) {
       paddingBottom: spacing.sm,
     },
     titulo: { fontSize: 22, fontWeight: '700', color: colors.primary },
-    filaBotones: { flexDirection: 'row', gap: spacing.xs },
+    filaBotones: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     botonConfig: {
       width: 40,
       height: 40,
