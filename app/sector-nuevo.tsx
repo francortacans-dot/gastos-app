@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { TextInputTema as TextInput } from '../src/components/text-input-tema';
 import { Toast } from '../src/components/toast';
+import { BottomSheet } from '../src/components/bottom-sheet';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useApp } from '../src/app-context';
 import { useSectores } from '../src/hooks/use-datos';
@@ -56,7 +57,7 @@ export default function SectorNuevo() {
   }
 
   return (
-    <View style={estilos.contenedor}>
+    <BottomSheet titulo={editando ? 'Editar sector' : 'Nuevo sector'} onCerrar={() => router.back()}>
       <Text style={estilos.etiquetaCampo}>Nombre</Text>
       <TextInput value={nombre} onChangeText={setNombre} placeholder="Ej: Ocio" style={estilos.input} autoFocus />
 
@@ -91,13 +92,12 @@ export default function SectorNuevo() {
           <Text style={estilos.textoBotonBorrar}>Borrar sector</Text>
         </Pressable>
       )}
-    </View>
+    </BottomSheet>
   );
 }
 
 function crearEstilos(colors: Colors) {
   return StyleSheet.create({
-    contenedor: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
     etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
     input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
     filaColores: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
