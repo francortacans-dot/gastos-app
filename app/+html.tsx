@@ -18,7 +18,7 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icons/icon.png" />
         <link rel="apple-touch-icon" href="/icons/icon.png" />
-        <meta name="theme-color" content="#16a97e" />
+        <meta name="theme-color" content="#374151" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Gastos" />

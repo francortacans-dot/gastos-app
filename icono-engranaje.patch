@@ -1,0 +1,40 @@
+From 90bc196881b81b680cfdb31184eb9bba4e416add Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 10 Aug 2026 18:59:36 +0000
+Subject: [PATCH] =?UTF-8?q?cambia=20el=20=C3=ADcono=20de=20Configuraci?=
+ =?UTF-8?q?=C3=B3n=20por=20un=20engranaje=20real?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+IconSettings dibujaba un círculo con 8 rayitas alrededor, prácticamente
+idéntico a IconSun (el toggle de modo noche) que está al lado en el
+header, por eso se confundían. Se reemplaza por un engranaje real (path
+tipo Heroicons, en el mismo estilo de trazo que el resto del set).
+---
+ src/components/icons.tsx | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/components/icons.tsx b/src/components/icons.tsx
+index 757b41e..56a3fa3 100644
+--- a/src/components/icons.tsx
++++ b/src/components/icons.tsx
+@@ -64,13 +64,14 @@ export function IconAhorro({ color, size = 22 }: IconProps) {
+ export function IconSettings({ color, size = 24 }: IconProps) {
+   return (
+     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+-      <Circle cx={12} cy={12} r={3} stroke={color} strokeWidth={STROKE} />
+       <Path
+-        d="M12 3.5v2M12 18.5v2M20.5 12h-2M5.5 12h-2M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4M17.7 17.7l-1.4-1.4M7.7 7.7 6.3 6.3"
++        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065Z"
+         stroke={color}
+         strokeWidth={STROKE}
+         strokeLinecap="round"
++        strokeLinejoin="round"
+       />
++      <Circle cx={12} cy={12} r={3} stroke={color} strokeWidth={STROKE} />
+     </Svg>
+   );
+ }
+-- 
+2.43.0

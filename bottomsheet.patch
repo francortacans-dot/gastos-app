@@ -1,0 +1,352 @@
+From 163732918e9a8911eb9c18868451feed0ca85e92 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 10 Aug 2026 13:25:37 +0000
+Subject: [PATCH] reemplaza el modal nativo de nuevo gasto/sector/objetivo por
+ un bottom sheet temeado
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+El modal de Stack (presentation: 'modal') se veía genérico en web: backdrop
+oscuro plano y tarjeta centrada sin seguir la paleta de la app. Ahora un
+componente BottomSheet propio maneja la presentación:
+
+- Mobile: sube desde abajo con esquinas redondeadas y agarradera.
+- Pantallas anchas: se centra como panel de ancho fijo (responsive via
+  useEsEscritorio, ya existente en el repo).
+- Usa los tokens del tema activo (surface, border, text) en vez del
+  chrome nativo del navegador/OS.
+- Animación de entrada/salida propia (Animated + easing), por eso las
+  tres pantallas pasan a animation: 'none' en el Stack.
+
+De paso, sector-nuevo y objetivo-nuevo muestran "Editar X" en el título
+cuando se abre en modo edición en vez de un título estático.
+---
+ app/_layout.tsx                 |  36 +--------
+ app/gasto-nuevo.tsx             |   9 +--
+ app/objetivo-nuevo.tsx          |   6 +-
+ app/sector-nuevo.tsx            |   6 +-
+ src/components/bottom-sheet.tsx | 132 ++++++++++++++++++++++++++++++++
+ src/components/icons.tsx        |   9 +++
+ 6 files changed, 154 insertions(+), 44 deletions(-)
+ create mode 100644 src/components/bottom-sheet.tsx
+
+diff --git a/app/_layout.tsx b/app/_layout.tsx
+index d75ccf7..65bd2c9 100644
+--- a/app/_layout.tsx
++++ b/app/_layout.tsx
+@@ -49,39 +49,9 @@ function StackConTema() {
+     <Stack screenOptions={{ headerShown: false, animation: 'fade', animationDuration: 180 }}>
+       <Stack.Screen name="(tabs)" />
+       <Stack.Screen name="pin" />
+-      <Stack.Screen
+-        name="gasto-nuevo"
+-        options={{
+-          presentation: 'modal',
+-          headerShown: true,
+-          title: 'Nuevo gasto',
+-          headerStyle: { backgroundColor: colors.surface },
+-          headerTintColor: colors.text1,
+-          headerLeft: () => <BotonVolver />,
+-        }}
+-      />
+-      <Stack.Screen
+-        name="sector-nuevo"
+-        options={{
+-          presentation: 'modal',
+-          headerShown: true,
+-          title: 'Sector',
+-          headerStyle: { backgroundColor: colors.surface },
+-          headerTintColor: colors.text1,
+-          headerLeft: () => <BotonVolver />,
+-        }}
+-      />
+-      <Stack.Screen
+-        name="objetivo-nuevo"
+-        options={{
+-          presentation: 'modal',
+-          headerShown: true,
+-          title: 'Objetivo de ahorro',
+-          headerStyle: { backgroundColor: colors.surface },
+-          headerTintColor: colors.text1,
+-          headerLeft: () => <BotonVolver />,
+-        }}
+-      />
++      <Stack.Screen name="gasto-nuevo" options={{ headerShown: false, animation: 'none' }} />
++      <Stack.Screen name="sector-nuevo" options={{ headerShown: false, animation: 'none' }} />
++      <Stack.Screen name="objetivo-nuevo" options={{ headerShown: false, animation: 'none' }} />
+       <Stack.Screen
+         name="config"
+         options={{
+diff --git a/app/gasto-nuevo.tsx b/app/gasto-nuevo.tsx
+index f042a8d..bc7b77d 100644
+--- a/app/gasto-nuevo.tsx
++++ b/app/gasto-nuevo.tsx
+@@ -1,7 +1,8 @@
+ import React, { useMemo, useState } from 'react';
+-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
++import { View, Text, Pressable, StyleSheet } from 'react-native';
+ import { TextInputTema as TextInput } from '../src/components/text-input-tema';
+ import { Toast } from '../src/components/toast';
++import { BottomSheet } from '../src/components/bottom-sheet';
+ import { useRouter } from 'expo-router';
+ import { useApp } from '../src/app-context';
+ import { useSectores } from '../src/hooks/use-datos';
+@@ -64,7 +65,7 @@ export default function GastoNuevo() {
+   }
+ 
+   return (
+-    <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
++    <BottomSheet titulo="Nuevo gasto" onCerrar={() => router.back()}>
+       <TextInput
+         value={montoTexto}
+         onChangeText={(t) => {
+@@ -127,14 +128,12 @@ export default function GastoNuevo() {
+       <Pressable style={estilos.botonGuardar} onPress={guardar} disabled={guardando}>
+         <Text style={estilos.textoBotonGuardar}>{guardando ? 'Guardando...' : 'Guardar gasto'}</Text>
+       </Pressable>
+-    </ScrollView>
++    </BottomSheet>
+   );
+ }
+ 
+ function crearEstilos(colors: Colors) {
+   return StyleSheet.create({
+-    contenedor: { flex: 1, backgroundColor: colors.bg },
+-    contenido: { padding: spacing.lg },
+     inputMonto: { fontSize: 40, fontWeight: '700', color: colors.text1, textAlign: 'center', marginBottom: spacing.sm },
+     opcionales: { marginTop: spacing.sm, marginBottom: spacing.lg },
+     etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
+diff --git a/app/objetivo-nuevo.tsx b/app/objetivo-nuevo.tsx
+index 7cf73e9..7c3829c 100644
+--- a/app/objetivo-nuevo.tsx
++++ b/app/objetivo-nuevo.tsx
+@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
+ import { View, Text, Pressable, StyleSheet } from 'react-native';
+ import { TextInputTema as TextInput } from '../src/components/text-input-tema';
+ import { Toast } from '../src/components/toast';
++import { BottomSheet } from '../src/components/bottom-sheet';
+ import { useLocalSearchParams, useRouter } from 'expo-router';
+ import { useApp } from '../src/app-context';
+ import { useObjetivos } from '../src/hooks/use-datos';
+@@ -69,7 +70,7 @@ export default function ObjetivoNuevo() {
+   }
+ 
+   return (
+-    <View style={estilos.contenedor}>
++    <BottomSheet titulo={editando ? 'Editar objetivo' : 'Nuevo objetivo'} onCerrar={() => router.back()}>
+       <Text style={estilos.etiquetaCampo}>Nombre</Text>
+       <TextInput value={nombre} onChangeText={setNombre} placeholder="Ej: Viaje a Bariloche" style={estilos.input} autoFocus />
+ 
+@@ -106,13 +107,12 @@ export default function ObjetivoNuevo() {
+           <Text style={estilos.textoBotonBorrar}>Borrar objetivo</Text>
+         </Pressable>
+       )}
+-    </View>
++    </BottomSheet>
+   );
+ }
+ 
+ function crearEstilos(colors: Colors) {
+   return StyleSheet.create({
+-    contenedor: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
+     etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
+     input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
+     filaChips: { flexDirection: 'row', gap: spacing.xs },
+diff --git a/app/sector-nuevo.tsx b/app/sector-nuevo.tsx
+index 9f12024..bb1bb65 100644
+--- a/app/sector-nuevo.tsx
++++ b/app/sector-nuevo.tsx
+@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
+ import { View, Text, Pressable, StyleSheet } from 'react-native';
+ import { TextInputTema as TextInput } from '../src/components/text-input-tema';
+ import { Toast } from '../src/components/toast';
++import { BottomSheet } from '../src/components/bottom-sheet';
+ import { useLocalSearchParams, useRouter } from 'expo-router';
+ import { useApp } from '../src/app-context';
+ import { useSectores } from '../src/hooks/use-datos';
+@@ -56,7 +57,7 @@ export default function SectorNuevo() {
+   }
+ 
+   return (
+-    <View style={estilos.contenedor}>
++    <BottomSheet titulo={editando ? 'Editar sector' : 'Nuevo sector'} onCerrar={() => router.back()}>
+       <Text style={estilos.etiquetaCampo}>Nombre</Text>
+       <TextInput value={nombre} onChangeText={setNombre} placeholder="Ej: Ocio" style={estilos.input} autoFocus />
+ 
+@@ -91,13 +92,12 @@ export default function SectorNuevo() {
+           <Text style={estilos.textoBotonBorrar}>Borrar sector</Text>
+         </Pressable>
+       )}
+-    </View>
++    </BottomSheet>
+   );
+ }
+ 
+ function crearEstilos(colors: Colors) {
+   return StyleSheet.create({
+-    contenedor: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
+     etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
+     input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
+     filaColores: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+diff --git a/src/components/bottom-sheet.tsx b/src/components/bottom-sheet.tsx
+new file mode 100644
+index 0000000..e93b3ed
+--- /dev/null
++++ b/src/components/bottom-sheet.tsx
+@@ -0,0 +1,132 @@
++import React, { useEffect, useMemo, useRef } from 'react';
++import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
++import { useColors } from '../theme/theme-context';
++import { useEsEscritorio } from '../hooks/use-es-escritorio';
++import type { Colors } from '../theme/palettes';
++import { spacing } from '../theme/spacing';
++import { IconClose } from './icons';
++
++const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
++
++interface BottomSheetProps {
++  titulo: string;
++  onCerrar: () => void;
++  children: React.ReactNode;
++}
++
++/**
++ * Envoltorio para las pantallas de alta/edición (nuevo gasto, sector,
++ * objetivo de ahorro). En mobile sube como una hoja con esquinas
++ * redondeadas y agarradera; en pantallas anchas se centra como un panel.
++ * Reemplaza el modal nativo del Stack (que no seguía la paleta del tema).
++ *
++ * La pantalla que lo usa debe tener `headerShown: false` y `animation: 'none'`
++ * en `_layout.tsx`: la animación de entrada/salida la maneja este componente,
++ * no el navegador.
++ */
++export function BottomSheet({ titulo, onCerrar, children }: BottomSheetProps) {
++  const colors = useColors();
++  const esEscritorio = useEsEscritorio();
++  const estilos = useMemo(() => crearEstilos(colors), [colors]);
++  const anim = useRef(new Animated.Value(0)).current;
++  const cerrando = useRef(false);
++
++  useEffect(() => {
++    Animated.timing(anim, {
++      toValue: 1,
++      duration: 260,
++      easing: Easing.out(Easing.cubic),
++      useNativeDriver: true,
++    }).start();
++  }, [anim]);
++
++  function cerrar() {
++    if (cerrando.current) return;
++    cerrando.current = true;
++    Animated.timing(anim, {
++      toValue: 0,
++      duration: 200,
++      easing: Easing.in(Easing.cubic),
++      useNativeDriver: true,
++    }).start(({ finished }) => {
++      if (finished) onCerrar();
++    });
++  }
++
++  const transformPanel = esEscritorio
++    ? [
++        { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
++        { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) },
++      ]
++    : [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [640, 0] }) }];
++
++  return (
++    <View style={estilos.raiz}>
++      <AnimatedPressable style={[StyleSheet.absoluteFill, estilos.scrim, { opacity: anim }]} onPress={cerrar} />
++      <KeyboardAvoidingView
++        pointerEvents="box-none"
++        style={[estilos.centrador, esEscritorio ? estilos.centradorEscritorio : estilos.centradorMobile]}
++        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
++      >
++        <Animated.View
++          style={[
++            estilos.panel,
++            esEscritorio ? estilos.panelEscritorio : estilos.panelMobile,
++            { opacity: anim, transform: transformPanel },
++          ]}
++        >
++          {!esEscritorio && <View style={estilos.agarradera} />}
++          <View style={estilos.encabezado}>
++            <Text style={estilos.titulo}>{titulo}</Text>
++            <Pressable onPress={cerrar} hitSlop={10} style={estilos.botonCerrar}>
++              <IconClose color={colors.text2} size={16} />
++            </Pressable>
++          </View>
++          <ScrollView
++            style={estilos.cuerpo}
++            contentContainerStyle={estilos.cuerpoContenido}
++            keyboardShouldPersistTaps="handled"
++          >
++            {children}
++          </ScrollView>
++        </Animated.View>
++      </KeyboardAvoidingView>
++    </View>
++  );
++}
++
++function crearEstilos(colors: Colors) {
++  return StyleSheet.create({
++    raiz: { flex: 1, backgroundColor: colors.bg },
++    scrim: { backgroundColor: 'rgba(0,0,0,0.4)' },
++    centrador: { flex: 1 },
++    centradorMobile: { justifyContent: 'flex-end' },
++    centradorEscritorio: { justifyContent: 'center', alignItems: 'center' },
++    panel: {
++      backgroundColor: colors.surface,
++      overflow: 'hidden',
++      shadowColor: '#000',
++      shadowOpacity: 0.22,
++      shadowRadius: 20,
++      shadowOffset: { width: 0, height: 4 },
++      elevation: 12,
++    },
++    panelMobile: { maxHeight: '88%', borderTopLeftRadius: 22, borderTopRightRadius: 22 },
++    panelEscritorio: { width: 440, maxWidth: '90%', maxHeight: '82%', borderRadius: 20 },
++    agarradera: { width: 38, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginTop: spacing.sm },
++    encabezado: {
++      flexDirection: 'row',
++      alignItems: 'center',
++      justifyContent: 'space-between',
++      paddingHorizontal: spacing.lg,
++      paddingTop: spacing.sm,
++      paddingBottom: spacing.sm,
++      borderBottomWidth: 1,
++      borderBottomColor: colors.border,
++    },
++    titulo: { fontSize: 17, fontWeight: '700', color: colors.text1 },
++    botonCerrar: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
++    cuerpo: { flex: 1 },
++    cuerpoContenido: { padding: spacing.lg, paddingBottom: spacing.xl },
++  });
++}
+diff --git a/src/components/icons.tsx b/src/components/icons.tsx
+index e966166..a1653a9 100644
+--- a/src/components/icons.tsx
++++ b/src/components/icons.tsx
+@@ -174,6 +174,15 @@ export function IconSun({ color, size = 20 }: IconProps) {
+   );
+ }
+ 
++export function IconClose({ color, size = 20 }: IconProps) {
++  return (
++    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
++      <Line x1={6} y1={6} x2={18} y2={18} stroke={color} strokeWidth={STROKE} strokeLinecap="round" />
++      <Line x1={18} y1={6} x2={6} y2={18} stroke={color} strokeWidth={STROKE} strokeLinecap="round" />
++    </Svg>
++  );
++}
++
+ export function IconTrash({ color, size = 16 }: IconProps) {
+   return (
+     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+-- 
+2.43.0
+
