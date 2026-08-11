@@ -45,3 +45,43 @@ export interface SavingMovement {
   fecha: string;
   nota: string | null;
 }
+
+export interface Investment {
+  id: string;
+  ticker: string;
+  /** Cantidad actual de nominales. Baja con ventas parciales. */
+  nominales: number;
+  /** Precio promedio de compra tal como se tipeó, en monedaOriginal. */
+  ppc: number;
+  monedaOriginal: Currency;
+  /** Cotización usada al cargar, si monedaOriginal es USD. null si fue ARS. */
+  cotizacionUsada: number | null;
+  /** Costo por nominal en centavos de ARS. Única fuente de verdad para el costo total. */
+  costoCentavosArsUnitario: number;
+  /** Rubro/categoría de texto libre, ej. 'Tech'. Sin relación con los Sector de gastos. */
+  rubro: string | null;
+  /** Fecha de entrada, ISO 'YYYY-MM-DD'. */
+  fecha: string;
+  status: 'OPEN' | 'CLOSED';
+}
+
+export interface InvestmentSale {
+  id: string;
+  investmentId: string;
+  nominalesVendidos: number;
+  /** Precio de venta tal como se tipeó, en la monedaOriginal de la inversión vendida. */
+  precioVenta: number;
+  cotizacionUsada: number | null;
+  /** nominalesVendidos * precioVenta convertido a ARS. Es lo que entra como cash al broker. */
+  ingresoCentavosArs: number;
+  /** ingresoCentavosArs menos el costo de esos nominales. Dato informativo. */
+  gananciaCentavosArs: number;
+  /** Fecha ISO 'YYYY-MM-DD'. */
+  fecha: string;
+}
+
+export interface BrokerCash {
+  id: 'actual';
+  /** Saldo de efectivo sin invertir en el broker, en centavos de ARS. */
+  centavosArs: number;
+}
