@@ -36,6 +36,10 @@ export default function RootLayout() {
               name="inversion-nueva"
               options={{ presentation: 'modal', headerShown: true, title: 'Nueva inversión' }}
             />
+            <Stack.Screen
+              name="inversion-vender"
+              options={{ presentation: 'modal', headerShown: true, title: 'Vender inversión' }}
+            />
             <Stack.Screen name="config" options={{ headerShown: true, title: 'Configuración' }} />
           </Stack>
         </CandadoDePin>

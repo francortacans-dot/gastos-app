@@ -2,21 +2,27 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useApp } from '../../src/app-context';
-import { useInversiones, useBrokerCash } from '../../src/hooks/use-datos';
+import { useInversiones, useBrokerCash, useVentas } from '../../src/hooks/use-datos';
 import { usePreferences } from '../../src/preferences/use-preferences';
 import { useCotizacionActual } from '../../src/hooks/use-cotizacion-actual';
-import { parseAmountToCentavos } from '../../src/domain/money';
+import { parseAmountToCentavos, formatCentavos } from '../../src/domain/money';
 import { costoTotalPosicion, costoTotalAbierto, patrimonioInversiones } from '../../src/domain/investments';
 import { MoneyText } from '../../src/components/money-text';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
-import type { Investment } from '../../src/domain/types';
+import type { Investment, InvestmentSale } from '../../src/domain/types';
 
 export default function Inversiones() {
   const router = useRouter();
   const { repos } = useApp();
   const inversiones = useInversiones();
   const brokerCash = useBrokerCash();
+  const ventas = useVentas();
+  const ventasOrdenadas = [...ventas].sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+  function tickerDeVenta(venta: InvestmentSale): string {
+    return inversiones.find((i) => i.id === venta.investmentId)?.ticker ?? '—';
+  }
   const preferencias = usePreferences();
   const cotizacion = useCotizacionActual(preferencias.cotizacionPreferida);
 
@@ -139,6 +145,27 @@ export default function Inversiones() {
           </View>
         }
         ListEmptyComponent={<Text style={estilos.vacio}>Todavía no cargaste inversiones.</Text>}
+        ListFooterComponent={
+          ventasOrdenadas.length > 0 ? (
+            <View style={estilos.historial}>
+              <Text style={estilos.seccionTitulo}>Historial de ventas</Text>
+              {ventasOrdenadas.map((v) => (
+                <View key={v.id} style={estilos.filaVenta}>
+                  <View>
+                    <Text style={estilos.tickerVenta}>{tickerDeVenta(v)}</Text>
+                    <Text style={estilos.detalle}>
+                      {v.nominalesVendidos} nominales · {v.fecha}
+                    </Text>
+                  </View>
+                  <Text style={[estilos.gananciaVenta, { color: v.gananciaCentavosArs >= 0 ? colors.primaryDark : colors.red }]}>
+                    {v.gananciaCentavosArs >= 0 ? '+' : ''}
+                    {formatCentavos(v.gananciaCentavosArs)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null
+        }
       />
 
       <Pressable style={estilos.botonFlotante} onPress={() => router.push('/inversion-nueva')}>
@@ -179,6 +206,17 @@ const estilos = StyleSheet.create({
   filaBotones: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   linkVender: { color: colors.primary, fontWeight: '600' },
   linkEliminar: { color: colors.red, fontWeight: '600' },
+  historial: { marginTop: spacing.lg },
+  filaVenta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    padding: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  tickerVenta: { color: colors.text1, fontWeight: '700' },
+  gananciaVenta: { fontWeight: '700' },
   botonFlotante: {
     position: 'absolute',
     right: spacing.lg,
