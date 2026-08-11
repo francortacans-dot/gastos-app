@@ -1,0 +1,41 @@
+From 1cc277c796e666f0d58bd8969cd59f53f75dc0b4 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 10 Aug 2026 20:44:32 +0000
+Subject: [PATCH] =?UTF-8?q?evita=20que=20el=20navegador=20cachee=20el=20ma?=
+ =?UTF-8?q?nifest=20y=20los=20=C3=ADconos=20de=20la=20PWA?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+manifest.json y /icons/* se sirven siempre en la misma URL (a
+diferencia del bundle JS, que cambia de nombre en cada build), así que
+el navegador los cacheaba agresivamente y no tomaba el ícono nuevo
+hasta que expirara esa caché. Con Cache-Control: no-cache el navegador
+siempre revalida contra el servidor antes de usarlos.
+---
+ firebase.json | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/firebase.json b/firebase.json
+index 6564edd..6947d3e 100644
+--- a/firebase.json
++++ b/firebase.json
+@@ -7,6 +7,16 @@
+         "source": "**",
+         "destination": "/index.html"
+       }
++    ],
++    "headers": [
++      {
++        "source": "/manifest.json",
++        "headers": [{ "key": "Cache-Control", "value": "no-cache, max-age=0" }]
++      },
++      {
++        "source": "/icons/**",
++        "headers": [{ "key": "Cache-Control", "value": "no-cache, max-age=0" }]
++      }
+     ]
+   }
+ }
+-- 
+2.43.0
