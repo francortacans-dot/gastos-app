@@ -1,4 +1,5 @@
 import type { Investment, BrokerCash } from './types';
+import { costoTotalPosicion } from './investments';
 
 const ENCABEZADO = 'Ticker,Cantidad,PPC,Total,Sector,Status,Entrada';
 
@@ -28,7 +29,7 @@ export function generarCsvPortfolio(inversiones: Investment[], brokerCash: Broke
   const filaCash = `CASH,${montoCash},---,${montoCash},Disponible,ACTIVE,---`;
 
   const filasInversiones = inversiones.map((i) => {
-    const total = (i.nominales * i.costoCentavosArsUnitario) / 100;
+    const total = costoTotalPosicion(i) / 100;
     return [
       escaparCampo(i.ticker),
       i.nominales,

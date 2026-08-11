@@ -78,7 +78,7 @@ export default function InversionNueva() {
         onChangeText={setNominalesTexto}
         style={estilos.inputTexto}
         placeholder="Ej: 10"
-        keyboardType="decimal-pad"
+        keyboardType="number-pad"
       />
 
       <Text style={estilos.etiquetaCampo}>PPC (precio promedio de compra)</Text>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, FlatList, StyleSheet, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useApp } from '../../src/app-context';
 import { useInversiones, useBrokerCash, useVentas } from '../../src/hooks/use-datos';
@@ -30,6 +30,7 @@ export default function Inversiones() {
 
   const [editandoCash, setEditandoCash] = useState(false);
   const [cashTexto, setCashTexto] = useState('');
+  const [monedaEdicion, setMonedaEdicion] = useState<'ARS' | 'USD'>('ARS');
   const [error, setError] = useState<string | null>(null);
 
   const abiertas = inversiones.filter((i) => i.status === 'OPEN').sort((a, b) => b.fecha.localeCompare(a.fecha));
@@ -38,15 +39,15 @@ export default function Inversiones() {
 
   async function guardarCash() {
     const monto = parseAmountToCentavos(cashTexto);
-    if (monto === null) return;
-    if (preferencias.monedaVisualizacion === 'USD' && !cotizacion) {
+    if (monto === null) {
+      setError('Ingresá un monto válido');
+      return;
+    }
+    if (monedaEdicion === 'USD' && !cotizacion) {
       setError('No se pudo obtener la cotización del dólar, probá de nuevo');
       return;
     }
-    const centavos =
-      preferencias.monedaVisualizacion === 'USD'
-        ? usdToCentavosArs(monto / 100, cotizacion!.venta)
-        : monto;
+    const centavos = monedaEdicion === 'USD' ? usdToCentavosArs(monto / 100, cotizacion!.venta) : monto;
     try {
       await repos.brokerCash.guardar(centavos);
       setEditandoCash(false);
@@ -56,24 +57,31 @@ export default function Inversiones() {
     }
   }
 
+  async function ejecutarEliminar(id: string) {
+    setError(null);
+    try {
+      await repos.investments.eliminar(id);
+    } catch {
+      setError('No se pudo eliminar la inversión. Probá de nuevo.');
+    }
+  }
+
   function eliminarPosicion(id: string, ticker: string) {
-    Alert.alert('Eliminar inversión', `¿Eliminar la posición de ${ticker}? Esta acción no se puede deshacer.`, [
+    const mensaje = `¿Eliminar la posición de ${ticker}? Esta acción no se puede deshacer.`;
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(mensaje)) {
+        ejecutarEliminar(id);
+      }
+      return;
+    }
+    Alert.alert('Eliminar inversión', mensaje, [
       { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await repos.investments.eliminar(id);
-          } catch {
-            setError('No se pudo eliminar la inversión. Probá de nuevo.');
-          }
-        },
-      },
+      { text: 'Eliminar', style: 'destructive', onPress: () => ejecutarEliminar(id) },
     ]);
   }
 
   async function exportar() {
+    setError(null);
     try {
       const csv = generarCsvPortfolio(inversiones, brokerCash);
       await compartirCsv(csv);
@@ -147,7 +155,7 @@ export default function Inversiones() {
               <Text style={estilos.etiqueta}>Cash en el broker</Text>
               {editandoCash ? (
                 <View style={estilos.filaEdicionCash}>
-                  <Text style={estilos.etiqueta}>{preferencias.monedaVisualizacion}</Text>
+                  <Text style={estilos.etiqueta}>{monedaEdicion}</Text>
                   <TextInput
                     value={cashTexto}
                     onChangeText={setCashTexto}
@@ -167,11 +175,13 @@ export default function Inversiones() {
                       setError('No se pudo obtener la cotización del dólar, probá de nuevo');
                       return;
                     }
+                    const monedaActual = preferencias.monedaVisualizacion;
                     const valorEnMonedaActual =
-                      preferencias.monedaVisualizacion === 'USD'
+                      monedaActual === 'USD'
                         ? centavosArsToUsd(brokerCash.centavosArs, cotizacion!.venta)
                         : brokerCash.centavosArs / 100;
-                    setCashTexto(String(valorEnMonedaActual).replace('.', ','));
+                    setMonedaEdicion(monedaActual);
+                    setCashTexto(valorEnMonedaActual.toFixed(2).replace('.', ','));
                     setEditandoCash(true);
                   }}
                 >

@@ -97,7 +97,7 @@ export default function InversionVender() {
           setNominalesTexto(t);
           setError(null);
         }}
-        keyboardType="decimal-pad"
+        keyboardType="number-pad"
         style={estilos.inputTexto}
         placeholder={`Máximo ${inversion.nominales}`}
       />
