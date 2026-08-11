@@ -47,25 +47,4 @@ describe('crearBrokerCashRepo sin conexión', () => {
     expect(store.pendientes[0].coleccion).toBe('broker-cash');
     expect(store.pendientes[0].id).toBe('actual');
   });
-
-  it('sumar() incrementa el valor existente', async () => {
-    const store = crearStoreFake();
-    const repo = crearBrokerCashRepo({ db: null as any, uid: 'u1', localStore: store, estaOnline: () => false });
-
-    await repo.guardar(10000);
-    await repo.sumar(2500);
-    const valor = await repo.obtener();
-
-    expect(valor.centavosArs).toBe(12500);
-  });
-
-  it('sumar() sin valor previo parte de 0', async () => {
-    const store = crearStoreFake();
-    const repo = crearBrokerCashRepo({ db: null as any, uid: 'u1', localStore: store, estaOnline: () => false });
-
-    await repo.sumar(3000);
-    const valor = await repo.obtener();
-
-    expect(valor.centavosArs).toBe(3000);
-  });
 });

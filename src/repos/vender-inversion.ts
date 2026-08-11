@@ -1,5 +1,5 @@
 import { calcularVenta } from '../domain/investments';
-import type { Investment, InvestmentSale } from '../domain/types';
+import type { Investment, InvestmentSale, BrokerCash } from '../domain/types';
 import type { Repos } from './create-repo';
 
 export interface ParametrosVenta {
@@ -18,18 +18,15 @@ export interface ResultadoVentaInversion {
  * Orquesta una venta parcial o total: recalcula la posición, registra el
  * movimiento de venta, y suma el ingreso al cash del broker. Es el único
  * punto de entrada para vender — no llamar a los repos por separado.
+ * Recibe la inversión y el cash actuales ya cargados por el llamador (no
+ * los vuelve a leer del repo) para funcionar igual en web y en celular.
  */
 export async function venderInversion(
   repos: Repos,
-  investmentId: string,
+  inversion: Investment,
+  brokerCashActual: BrokerCash,
   params: ParametrosVenta
 ): Promise<ResultadoVentaInversion> {
-  const inversiones = await repos.investments.listar();
-  const inversion = inversiones.find((i) => i.id === investmentId);
-  if (!inversion) {
-    throw new Error(`No existe una inversión con id ${investmentId}`);
-  }
-
   const { ingresoCentavosArs, gananciaCentavosArs } = calcularVenta(
     inversion,
     params.nominalesVendidos,
@@ -38,13 +35,14 @@ export async function venderInversion(
   );
 
   const nominalesRestantes = inversion.nominales - params.nominalesVendidos;
-  const inversionActualizada = await repos.investments.actualizar(investmentId, {
+  const inversionActualizada = await repos.investments.guardar({
+    ...inversion,
     nominales: nominalesRestantes,
     status: nominalesRestantes === 0 ? 'CLOSED' : 'OPEN',
   });
 
   const venta = await repos.investmentSales.agregar({
-    investmentId,
+    investmentId: inversion.id,
     nominalesVendidos: params.nominalesVendidos,
     precioVenta: params.precioVenta,
     cotizacionUsada: params.cotizacionUsada,
@@ -53,7 +51,7 @@ export async function venderInversion(
     fecha: params.fecha,
   });
 
-  await repos.brokerCash.sumar(ingresoCentavosArs);
+  await repos.brokerCash.guardar(brokerCashActual.centavosArs + ingresoCentavosArs);
 
   return { inversion: inversionActualizada, venta };
 }

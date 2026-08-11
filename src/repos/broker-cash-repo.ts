@@ -12,7 +12,6 @@ interface DepsBrokerCashRepo {
 export interface BrokerCashRepo {
   obtener(): Promise<BrokerCash>;
   guardar(centavosArs: number): Promise<BrokerCash>;
-  sumar(centavosArs: number): Promise<BrokerCash>;
   suscribir(cb: (valor: BrokerCash) => void): () => void;
 }
 
@@ -53,11 +52,6 @@ export function crearBrokerCashRepo(deps: DepsBrokerCashRepo): BrokerCashRepo {
 
     async guardar(centavosArs: number): Promise<BrokerCash> {
       return persistir({ id: ID_DOC, centavosArs });
-    },
-
-    async sumar(centavosArs: number): Promise<BrokerCash> {
-      const actual = await leerLocal();
-      return persistir({ id: ID_DOC, centavosArs: actual.centavosArs + centavosArs });
     },
 
     suscribir(cb: (valor: BrokerCash) => void): () => void {

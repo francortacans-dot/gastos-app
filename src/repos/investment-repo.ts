@@ -13,7 +13,7 @@ interface DepsInvestmentRepo {
 export interface InvestmentRepo {
   listar(): Promise<Investment[]>;
   agregar(posicion: Omit<Investment, 'id'>): Promise<Investment>;
-  actualizar(id: string, cambios: Partial<Pick<Investment, 'nominales' | 'status'>>): Promise<Investment>;
+  guardar(inversion: Investment): Promise<Investment>;
   eliminar(id: string): Promise<void>;
   suscribir(cb: (inversiones: Investment[]) => void): () => void;
 }
@@ -61,20 +61,13 @@ export function crearInvestmentRepo(deps: DepsInvestmentRepo): InvestmentRepo {
       return persistir(inversion);
     },
 
-    async actualizar(
-      id: string,
-      cambios: Partial<Pick<Investment, 'nominales' | 'status'>>
-    ): Promise<Investment> {
+    async guardar(inversion: Investment): Promise<Investment> {
       const actuales = await leerLocal();
-      const existente = actuales.find((i) => i.id === id);
-      if (!existente) {
-        throw new Error(`No existe una inversión con id ${id}`);
-      }
-      const actualizada: Investment = { ...existente, ...cambios };
-
-      await escribirLocal(actuales.map((i) => (i.id === id ? actualizada : i)));
-
-      return persistir(actualizada);
+      const yaExiste = actuales.some((i) => i.id === inversion.id);
+      await escribirLocal(
+        yaExiste ? actuales.map((i) => (i.id === inversion.id ? inversion : i)) : [...actuales, inversion]
+      );
+      return persistir(inversion);
     },
 
     async eliminar(id: string): Promise<void> {

@@ -70,25 +70,46 @@ describe('crearInvestmentRepo sin conexión', () => {
     expect(lista[0].ticker).toBe('BMA');
   });
 
-  it('actualizar() modifica nominales y status, y encola la escritura', async () => {
+  it('guardar() modifica nominales y status de una inversión existente, y encola la escritura', async () => {
     const store = crearStoreFake();
     const repo = crearInvestmentRepo({ db: null as any, uid: 'u1', localStore: store, estaOnline: () => false });
 
     const inversion = await repo.agregar(posicionParcial());
-    const actualizada = await repo.actualizar(inversion.id, { nominales: 0, status: 'CLOSED' });
+    const actualizada = await repo.guardar({ ...inversion, nominales: 0, status: 'CLOSED' });
 
     expect(actualizada.nominales).toBe(0);
     expect(actualizada.status).toBe('CLOSED');
     const lista = await repo.listar();
+    expect(lista).toHaveLength(1);
     expect(lista[0].status).toBe('CLOSED');
-    expect(store.pendientes.filter((p) => p.id === inversion.id)).toHaveLength(2); // agregar + actualizar
+    expect(store.pendientes.filter((p) => p.id === inversion.id)).toHaveLength(2); // agregar + guardar
   });
 
-  it('actualizar() lanza un error si el id no existe', async () => {
+  it('guardar() con un id que todavía no está en el store local igual funciona y lo agrega', async () => {
+    // Simula el caso que rompía en web: leerSnapshot siempre devuelve [] ahí,
+    // así que guardar() nunca puede asumir que el id ya existe localmente.
     const store = crearStoreFake();
     const repo = crearInvestmentRepo({ db: null as any, uid: 'u1', localStore: store, estaOnline: () => false });
 
-    await expect(repo.actualizar('no-existe', { nominales: 0, status: 'CLOSED' })).rejects.toThrow();
+    const inversion: Investment = {
+      id: 'no-estaba-en-el-store',
+      ticker: 'GOOGL',
+      nominales: 3,
+      ppc: 5.16,
+      monedaOriginal: 'ARS',
+      cotizacionUsada: null,
+      costoCentavosArsUnitario: 516,
+      rubro: null,
+      fecha: '2026-08-11',
+      status: 'OPEN',
+    };
+
+    const guardada = await repo.guardar(inversion);
+
+    expect(guardada).toEqual(inversion);
+    const lista = await repo.listar();
+    expect(lista).toHaveLength(1);
+    expect(lista[0]).toEqual(inversion);
   });
 
   it('eliminar() encola un delete y lo saca de listar()', async () => {
