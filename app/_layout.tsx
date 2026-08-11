@@ -32,6 +32,10 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="pin" />
             <Stack.Screen name="gasto-nuevo" options={{ presentation: 'modal', headerShown: true, title: 'Nuevo gasto' }} />
+            <Stack.Screen
+              name="inversion-nueva"
+              options={{ presentation: 'modal', headerShown: true, title: 'Nueva inversión' }}
+            />
             <Stack.Screen name="config" options={{ headerShown: true, title: 'Configuración' }} />
           </Stack>
         </CandadoDePin>
