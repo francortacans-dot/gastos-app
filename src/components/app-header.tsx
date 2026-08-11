@@ -1,19 +1,20 @@
-import React, { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
+import React, { useMemo } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getFirebaseAuth } from '../firebase/app';
-import { useColors } from '../theme/theme-context';
 import { usePreferences } from '../preferences/use-preferences';
 import type { Colors } from '../theme/palettes';
 import { spacing } from '../theme/spacing';
-import { IconHome, IconHistorial, IconSectores, IconAhorro, IconSettings, IconMoon, IconSun, IconLogout, type IconProps } from './icons';
+import { useColors } from '../theme/theme-context';
+import { IconAhorro, IconHistorial, IconHome, IconLogout, IconMoon, IconSectores, IconSettings, IconSun, IconTrendingUp, type IconProps } from './icons';
 
-const TABS: { href: '/' | '/historial' | '/sectores' | '/ahorro'; label: string; Icon: (p: IconProps) => React.ReactElement }[] = [
+const TABS: { href: '/' | '/historial' | '/sectores' | '/ahorro' | '/inversiones'; label: string; Icon: (p: IconProps) => React.ReactElement }[] = [
   { href: '/', label: 'Inicio', Icon: IconHome },
   { href: '/historial', label: 'Historial', Icon: IconHistorial },
   { href: '/sectores', label: 'Sectores', Icon: IconSectores },
   { href: '/ahorro', label: 'Ahorro', Icon: IconAhorro },
+  { href: '/inversiones', label: 'Inversiones', Icon: IconTrendingUp },
 ];
 
 export function AppHeader() {
