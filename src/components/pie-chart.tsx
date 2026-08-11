@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { calcularAngulos, type Porcion } from './pie-chart-math';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/theme-context';
 
 function puntoEnCirculo(cx: number, cy: number, radio: number, anguloGrados: number) {
   const anguloRad = ((anguloGrados - 90) * Math.PI) / 180;
@@ -17,6 +17,7 @@ function pathDePorcion(cx: number, cy: number, radio: number, inicio: number, fi
 }
 
 export function PieChart({ porciones, size = 200 }: { porciones: Porcion[]; size?: number }) {
+  const colors = useColors();
   const radio = size / 2;
   const conAngulos = calcularAngulos(porciones);
 

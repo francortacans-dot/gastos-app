@@ -8,6 +8,7 @@ import { crearSavingsRepo, type SavingsRepo } from './savings-repo';
 import { crearInvestmentRepo, type InvestmentRepo } from './investment-repo';
 import { crearInvestmentSaleRepo, type InvestmentSaleRepo } from './investment-sale-repo';
 import { crearBrokerCashRepo, type BrokerCashRepo } from './broker-cash-repo';
+import { crearGoalRepo, type GoalRepo } from './goal-repo';
 
 export interface Repos {
   expenses: ExpenseRepo;
@@ -17,6 +18,7 @@ export interface Repos {
   investments: InvestmentRepo;
   investmentSales: InvestmentSaleRepo;
   brokerCash: BrokerCashRepo;
+  goals: GoalRepo;
 }
 
 let estadoConexion = true;
@@ -39,5 +41,6 @@ export function crearRepos(uid: string): Repos {
     investments: crearInvestmentRepo(deps),
     investmentSales: crearInvestmentSaleRepo(deps),
     brokerCash: crearBrokerCashRepo(deps),
+    goals: crearGoalRepo(deps),
   };
 }

@@ -1,6 +1,11 @@
 export type Currency = 'ARS' | 'USD';
 export type RateKind = 'oficial' | 'blue';
-export type PaymentMethod = 'efectivo' | 'debito' | 'credito' | 'transferencia';
+/**
+ * Medio de pago del gasto. Texto libre (no un enum cerrado): hay sugerencias
+ * comunes (efectivo, débito, Mercado Pago, Brubank, etc.) pero se puede
+ * escribir cualquier otro nombre.
+ */
+export type PaymentMethod = string;
 
 /** Clave de mes en formato 'YYYY-MM'. */
 export type MonthKey = string;
@@ -84,4 +89,17 @@ export interface BrokerCash {
   id: 'actual';
   /** Saldo de efectivo sin invertir en el broker, en centavos de ARS. */
   centavosArs: number;
+}
+
+export type TamanoObjetivo = 'chico' | 'mediano' | 'grande';
+
+/** Objetivo de ahorro con nombre propio (tipo "cajitas"), independiente del ahorro general. */
+export interface Objetivo {
+  id: string;
+  nombre: string;
+  montoMetaCentavos: number;
+  montoActualCentavos: number;
+  /** Fecha ISO 'YYYY-MM-DD'. null = sin fecha objetivo. */
+  fechaObjetivo: string | null;
+  tamano: TamanoObjetivo;
 }

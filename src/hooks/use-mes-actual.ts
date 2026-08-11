@@ -15,5 +15,6 @@ export function useMesActual() {
     irAMesAnterior: () => setMes((m) => mesAnterior(m)),
     irAMesSiguiente: () => setMes((m) => siguienteMes(m)),
     irAHoy: () => setMes(mesDeHoy()),
+    irAMes: (nuevoMes: MonthKey) => setMes(nuevoMes),
   };
 }

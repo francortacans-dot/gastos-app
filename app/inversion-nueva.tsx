@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { TextInputTema as TextInput } from '../src/components/text-input-tema';
+import { Toast } from '../src/components/toast';
+import { BottomSheet } from '../src/components/bottom-sheet';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/app-context';
 import { usePreferences } from '../src/preferences/use-preferences';
 import { useCotizacionActual } from '../src/hooks/use-cotizacion-actual';
 import { costoUnitarioCentavosArs } from '../src/domain/investments';
 import type { Currency } from '../src/domain/types';
-import { colors } from '../src/theme/colors';
+import { useColors } from '../src/theme/theme-context';
+import type { Colors } from '../src/theme/palettes';
 import { spacing } from '../src/theme/spacing';
 
 export default function InversionNueva() {
@@ -14,6 +18,8 @@ export default function InversionNueva() {
   const { repos } = useApp();
   const preferencias = usePreferences();
   const cotizacion = useCotizacionActual(preferencias.cotizacionPreferida);
+  const colors = useColors();
+  const estilos = useMemo(() => crearEstilos(colors), [colors]);
 
   const [ticker, setTicker] = useState('');
   const [nominalesTexto, setNominalesTexto] = useState('');
@@ -68,7 +74,7 @@ export default function InversionNueva() {
   }
 
   return (
-    <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+    <BottomSheet titulo="Nueva inversión" onCerrar={() => router.back()}>
       <Text style={estilos.etiquetaCampo}>Ticker</Text>
       <TextInput value={ticker} onChangeText={setTicker} style={estilos.inputTexto} placeholder="Ej: GOOGL" autoCapitalize="characters" />
 
@@ -102,26 +108,25 @@ export default function InversionNueva() {
       <Text style={estilos.etiquetaCampo}>Rubro (opcional)</Text>
       <TextInput value={rubro} onChangeText={setRubro} style={estilos.inputTexto} placeholder="Ej: Tech" />
 
-      {error && <Text style={estilos.error}>{error}</Text>}
+      <Toast texto={error} tipo="error" colors={colors} />
 
       <Pressable style={estilos.botonGuardar} onPress={guardar} disabled={guardando}>
         <Text style={estilos.textoBotonGuardar}>{guardando ? 'Guardando...' : 'Guardar inversión'}</Text>
       </Pressable>
-    </ScrollView>
+    </BottomSheet>
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: colors.bg },
-  contenido: { padding: spacing.lg },
-  etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
-  inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
-  filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  chipActivo: { backgroundColor: colors.primary, borderColor: colors.primary },
-  textoChip: { color: colors.text2 },
-  textoChipActivo: { color: colors.surface },
-  error: { color: colors.red, marginTop: spacing.sm },
-  botonGuardar: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center', marginTop: spacing.lg },
-  textoBotonGuardar: { color: colors.surface, fontWeight: '700', fontSize: 16 },
-});
+function crearEstilos(colors: Colors) {
+  return StyleSheet.create({
+    etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
+    inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
+    filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+    chipActivo: { backgroundColor: colors.primary, borderColor: colors.primary },
+    textoChip: { color: colors.text2 },
+    textoChipActivo: { color: colors.onPrimary },
+    botonGuardar: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center', marginTop: spacing.lg },
+    textoBotonGuardar: { color: colors.onPrimary, fontWeight: '700', fontSize: 16 },
+  });
+}

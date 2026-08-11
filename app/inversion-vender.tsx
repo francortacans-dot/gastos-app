@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { TextInputTema as TextInput } from '../src/components/text-input-tema';
+import { Toast } from '../src/components/toast';
+import { BottomSheet } from '../src/components/bottom-sheet';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useApp } from '../src/app-context';
 import { useInversiones, useBrokerCash } from '../src/hooks/use-datos';
@@ -8,7 +11,8 @@ import { useCotizacionActual } from '../src/hooks/use-cotizacion-actual';
 import { calcularVenta } from '../src/domain/investments';
 import { venderInversion } from '../src/repos/vender-inversion';
 import { formatCentavos } from '../src/domain/money';
-import { colors } from '../src/theme/colors';
+import { useColors } from '../src/theme/theme-context';
+import type { Colors } from '../src/theme/palettes';
 import { spacing } from '../src/theme/spacing';
 
 export default function InversionVender() {
@@ -19,6 +23,8 @@ export default function InversionVender() {
   const brokerCash = useBrokerCash();
   const preferencias = usePreferences();
   const cotizacion = useCotizacionActual(preferencias.cotizacionPreferida);
+  const colors = useColors();
+  const estilos = useMemo(() => crearEstilos(colors), [colors]);
 
   const inversion = inversiones.find((i) => i.id === id);
 
@@ -29,9 +35,9 @@ export default function InversionVender() {
 
   if (!inversion) {
     return (
-      <View style={estilos.contenedor}>
-        <Text style={estilos.error}>No se encontró la inversión.</Text>
-      </View>
+      <BottomSheet titulo="Vender inversión" onCerrar={() => router.back()}>
+        <Text style={estilos.subtitulo}>No se encontró la inversión.</Text>
+      </BottomSheet>
     );
   }
 
@@ -86,8 +92,7 @@ export default function InversionVender() {
   }
 
   return (
-    <View style={estilos.contenedor}>
-      <Text style={estilos.titulo}>{inversion.ticker}</Text>
+    <BottomSheet titulo={`Vender ${inversion.ticker}`} onCerrar={() => router.back()}>
       <Text style={estilos.subtitulo}>Tenés {inversion.nominales} nominales</Text>
 
       <Text style={estilos.etiquetaCampo}>Nominales a vender</Text>
@@ -130,25 +135,24 @@ export default function InversionVender() {
         </View>
       )}
 
-      {error && <Text style={estilos.error}>{error}</Text>}
+      <Toast texto={error} tipo="error" colors={colors} />
 
       <Pressable style={estilos.botonGuardar} onPress={confirmarVenta} disabled={guardando}>
         <Text style={estilos.textoBotonGuardar}>{guardando ? 'Vendiendo...' : 'Confirmar venta'}</Text>
       </Pressable>
-    </View>
+    </BottomSheet>
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
-  titulo: { fontSize: 22, fontWeight: '700', color: colors.text1 },
-  subtitulo: { color: colors.text3, marginBottom: spacing.md },
-  etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
-  inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
-  tarjetaPrevia: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, marginTop: spacing.md },
-  etiqueta: { color: colors.text3, marginTop: spacing.xs },
-  montoPrevia: { fontSize: 18, fontWeight: '700', color: colors.text1 },
-  error: { color: colors.red, marginTop: spacing.sm },
-  botonGuardar: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center', marginTop: spacing.lg },
-  textoBotonGuardar: { color: colors.surface, fontWeight: '700', fontSize: 16 },
-});
+function crearEstilos(colors: Colors) {
+  return StyleSheet.create({
+    subtitulo: { color: colors.text3, marginBottom: spacing.md },
+    etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
+    inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
+    tarjetaPrevia: { backgroundColor: colors.surface2, borderRadius: 12, padding: spacing.md, marginTop: spacing.md },
+    etiqueta: { color: colors.text3, marginTop: spacing.xs },
+    montoPrevia: { fontSize: 18, fontWeight: '700', color: colors.text1 },
+    botonGuardar: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center', marginTop: spacing.lg },
+    textoBotonGuardar: { color: colors.onPrimary, fontWeight: '700', fontSize: 16 },
+  });
+}

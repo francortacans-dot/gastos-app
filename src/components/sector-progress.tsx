@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { formatCentavos } from '../domain/money';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/theme-context';
+import type { Colors } from '../theme/palettes';
 import { spacing } from '../theme/spacing';
 
 interface SectorProgressProps {
@@ -13,6 +14,8 @@ interface SectorProgressProps {
 }
 
 export function SectorProgress({ nombre, color, gastado, limite }: SectorProgressProps) {
+  const colors = useColors();
+  const estilos = useMemo(() => crearEstilos(colors), [colors]);
   const porcentaje = limite && limite > 0 ? Math.min(100, (gastado / limite) * 100) : 0;
   const sobrepasado = limite !== null && gastado > limite;
 
@@ -40,12 +43,14 @@ export function SectorProgress({ nombre, color, gastado, limite }: SectorProgres
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { marginBottom: spacing.md },
-  filaTitulo: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
-  punto: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.xs },
-  nombre: { flex: 1, color: colors.text1, fontWeight: '600' },
-  monto: { color: colors.text3, fontSize: 13 },
-  barraFondo: { height: 6, borderRadius: 3, backgroundColor: colors.surface2, overflow: 'hidden' },
-  barraRelleno: { height: '100%', borderRadius: 3 },
-});
+function crearEstilos(colors: Colors) {
+  return StyleSheet.create({
+    contenedor: { marginBottom: spacing.md },
+    filaTitulo: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
+    punto: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.xs },
+    nombre: { flex: 1, color: colors.text1, fontWeight: '600' },
+    monto: { color: colors.text3, fontSize: 13 },
+    barraFondo: { height: 6, borderRadius: 3, backgroundColor: colors.surface2, overflow: 'hidden' },
+    barraRelleno: { height: '100%', borderRadius: 3 },
+  });
+}

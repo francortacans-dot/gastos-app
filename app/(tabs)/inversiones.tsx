@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet, Alert, Platform } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, Pressable, FlatList, StyleSheet, Alert, Platform } from 'react-native';
+import { TextInputTema as TextInput } from '../../src/components/text-input-tema';
+import { Toast } from '../../src/components/toast';
+import { PantallaAnimada } from '../../src/components/pantalla-animada';
 import { useRouter } from 'expo-router';
 import { useApp } from '../../src/app-context';
 import { useInversiones, useBrokerCash, useVentas } from '../../src/hooks/use-datos';
@@ -8,7 +11,9 @@ import { useCotizacionActual } from '../../src/hooks/use-cotizacion-actual';
 import { parseAmountToCentavos, formatCentavos, usdToCentavosArs, centavosArsToUsd } from '../../src/domain/money';
 import { costoTotalPosicion, costoTotalAbierto, patrimonioInversiones } from '../../src/domain/investments';
 import { MoneyText } from '../../src/components/money-text';
-import { colors } from '../../src/theme/colors';
+import { IconPlus, IconTrash } from '../../src/components/icons';
+import { useColors } from '../../src/theme/theme-context';
+import type { Colors } from '../../src/theme/palettes';
 import { spacing } from '../../src/theme/spacing';
 import type { Investment, InvestmentSale } from '../../src/domain/types';
 import { generarCsvPortfolio } from '../../src/domain/export-csv';
@@ -20,13 +25,16 @@ export default function Inversiones() {
   const inversiones = useInversiones();
   const brokerCash = useBrokerCash();
   const ventas = useVentas();
+  const preferencias = usePreferences();
+  const cotizacion = useCotizacionActual(preferencias.cotizacionPreferida);
+  const colors = useColors();
+  const estilos = useMemo(() => crearEstilos(colors), [colors]);
+
   const ventasOrdenadas = [...ventas].sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   function tickerDeVenta(venta: InvestmentSale): string {
     return inversiones.find((i) => i.id === venta.investmentId)?.ticker ?? '—';
   }
-  const preferencias = usePreferences();
-  const cotizacion = useCotizacionActual(preferencias.cotizacionPreferida);
 
   const [editandoCash, setEditandoCash] = useState(false);
   const [cashTexto, setCashTexto] = useState('');
@@ -93,13 +101,16 @@ export default function Inversiones() {
   function renderPosicion({ item }: { item: Investment }) {
     return (
       <View style={estilos.filaPosicion}>
-        <View style={estilos.infoPosicion}>
+        <Pressable
+          style={estilos.infoPosicion}
+          onPress={() => router.push({ pathname: '/inversion-vender', params: { id: item.id } })}
+        >
           <Text style={estilos.ticker}>{item.ticker}</Text>
           <Text style={estilos.detalle}>
             {item.nominales} nominales · PPC {item.ppc} {item.monedaOriginal}
             {item.rubro ? ` · ${item.rubro}` : ''}
           </Text>
-        </View>
+        </Pressable>
         <View style={estilos.accionesPosicion}>
           <MoneyText
             centavos={costoTotalPosicion(item)}
@@ -108,11 +119,11 @@ export default function Inversiones() {
             style={estilos.costoPosicion}
           />
           <View style={estilos.filaBotones}>
-            <Pressable onPress={() => router.push({ pathname: '/inversion-vender', params: { id: item.id } })}>
-              <Text style={estilos.linkVender}>Vender</Text>
+            <Pressable onPress={() => router.push({ pathname: '/inversion-vender', params: { id: item.id } })} style={estilos.botonVender}>
+              <Text style={estilos.textoBotonVender}>Vender</Text>
             </Pressable>
-            <Pressable onPress={() => eliminarPosicion(item.id, item.ticker)}>
-              <Text style={estilos.linkEliminar}>Eliminar</Text>
+            <Pressable onPress={() => eliminarPosicion(item.id, item.ticker)} hitSlop={8} style={estilos.botonBorrar}>
+              <IconTrash color={colors.text4} size={16} />
             </Pressable>
           </View>
         </View>
@@ -121,7 +132,7 @@ export default function Inversiones() {
   }
 
   return (
-    <View style={estilos.contenedor}>
+    <PantallaAnimada style={estilos.contenedor}>
       <FlatList
         data={abiertas}
         keyExtractor={(i) => i.id}
@@ -133,15 +144,20 @@ export default function Inversiones() {
               <Pressable onPress={exportar} style={estilos.botonExportar}>
                 <Text style={estilos.textoExportar}>Exportar</Text>
               </Pressable>
-              <Pressable onPress={() => preferencias.setMonedaVisualizacion('ARS')}>
-                <Text style={[estilos.toggle, preferencias.monedaVisualizacion === 'ARS' && estilos.toggleActivo]}>ARS</Text>
-              </Pressable>
-              <Pressable onPress={() => preferencias.setMonedaVisualizacion('USD')}>
-                <Text style={[estilos.toggle, preferencias.monedaVisualizacion === 'USD' && estilos.toggleActivo]}>USD</Text>
-              </Pressable>
+              <View style={estilos.grupoChip}>
+                {(['ARS', 'USD'] as const).map((m) => (
+                  <Pressable
+                    key={m}
+                    onPress={() => preferencias.setMonedaVisualizacion(m)}
+                    style={[estilos.chip, preferencias.monedaVisualizacion === m && estilos.chipActivo]}
+                  >
+                    <Text style={[estilos.textoChip, preferencias.monedaVisualizacion === m && estilos.textoChipActivo]}>{m}</Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
 
-            {error && <Text style={estilos.error}>{error}</Text>}
+            <Toast texto={error} tipo="error" colors={colors} />
 
             <View style={estilos.tarjetaResumen}>
               <Text style={estilos.etiqueta}>Costo invertido</Text>
@@ -231,68 +247,77 @@ export default function Inversiones() {
       />
 
       <Pressable style={estilos.botonFlotante} onPress={() => router.push('/inversion-nueva')}>
-        <Text style={estilos.textoBotonFlotante}>+</Text>
+        <IconPlus color={colors.onPrimary} size={26} />
       </Pressable>
-    </View>
+    </PantallaAnimada>
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: colors.bg },
-  lista: { padding: spacing.md, paddingBottom: spacing.xxl * 2 },
-  filaMoneda: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: spacing.sm },
-  botonExportar: { marginRight: 'auto', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  textoExportar: { color: colors.blue, fontWeight: '600' },
-  toggle: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, color: colors.text3, fontWeight: '600' },
-  toggleActivo: { color: colors.primary, textDecorationLine: 'underline' },
-  error: { color: colors.red, marginBottom: spacing.sm },
-  tarjetaResumen: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.lg, marginBottom: spacing.md },
-  etiqueta: { color: colors.text3, marginTop: spacing.sm },
-  montoGrande: { fontSize: 24, fontWeight: '700', color: colors.text1 },
-  montoCash: { fontSize: 18, fontWeight: '700', color: colors.primaryDark, textDecorationLine: 'underline' },
-  filaEdicionCash: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  inputCash: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.xs, backgroundColor: colors.bg },
-  linkGuardarCash: { color: colors.primary, fontWeight: '700' },
-  seccionTitulo: { color: colors.text2, fontWeight: '700', marginBottom: spacing.sm, fontSize: 16 },
-  vacio: { color: colors.text3, textAlign: 'center', marginTop: spacing.md },
-  filaPosicion: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    padding: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  infoPosicion: { flex: 1 },
-  ticker: { color: colors.text1, fontWeight: '700' },
-  detalle: { color: colors.text3, fontSize: 12, marginTop: spacing.xs },
-  accionesPosicion: { alignItems: 'flex-end' },
-  costoPosicion: { fontWeight: '700' },
-  filaBotones: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
-  linkVender: { color: colors.primary, fontWeight: '600' },
-  linkEliminar: { color: colors.red, fontWeight: '600' },
-  historial: { marginTop: spacing.lg },
-  filaVenta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    padding: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  tickerVenta: { color: colors.text1, fontWeight: '700' },
-  gananciaVenta: { fontWeight: '700' },
-  botonFlotante: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-  },
-  textoBotonFlotante: { color: colors.surface, fontSize: 28, lineHeight: 30 },
-});
+function crearEstilos(colors: Colors) {
+  const sombra = { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as const;
+
+  return StyleSheet.create({
+    contenedor: { flex: 1, backgroundColor: colors.bg },
+    lista: { padding: spacing.md, paddingBottom: spacing.xxl * 2 },
+    filaMoneda: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+    botonExportar: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+    textoExportar: { color: colors.blue, fontWeight: '600' },
+    grupoChip: { flexDirection: 'row', backgroundColor: colors.surface2, borderRadius: 20, padding: 3 },
+    chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: 17 },
+    chipActivo: { backgroundColor: colors.primary },
+    textoChip: { color: colors.text3, fontWeight: '600', fontSize: 13 },
+    textoChipActivo: { color: colors.onPrimary },
+    tarjetaResumen: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.lg, marginBottom: spacing.md, ...sombra },
+    etiqueta: { color: colors.text3, marginTop: spacing.sm },
+    montoGrande: { fontSize: 24, fontWeight: '700', color: colors.text1 },
+    montoCash: { fontSize: 18, fontWeight: '700', color: colors.primaryDark, textDecorationLine: 'underline' },
+    filaEdicionCash: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    inputCash: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.xs, backgroundColor: colors.bg },
+    linkGuardarCash: { color: colors.primary, fontWeight: '700' },
+    seccionTitulo: { color: colors.text2, fontWeight: '700', marginBottom: spacing.sm, fontSize: 16 },
+    vacio: { color: colors.text3, textAlign: 'center', marginTop: spacing.md },
+    filaPosicion: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      padding: spacing.sm,
+      marginBottom: spacing.xs,
+      ...sombra,
+    },
+    infoPosicion: { flex: 1 },
+    ticker: { color: colors.text1, fontWeight: '700' },
+    detalle: { color: colors.text3, fontSize: 12, marginTop: spacing.xs },
+    accionesPosicion: { alignItems: 'flex-end' },
+    costoPosicion: { fontWeight: '700', color: colors.text1 },
+    filaBotones: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
+    botonVender: { paddingHorizontal: spacing.sm, paddingVertical: 2 },
+    textoBotonVender: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+    botonBorrar: { padding: 4 },
+    historial: { marginTop: spacing.lg },
+    filaVenta: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      padding: spacing.sm,
+      marginBottom: spacing.xs,
+      ...sombra,
+    },
+    tickerVenta: { color: colors.text1, fontWeight: '700' },
+    gananciaVenta: { fontWeight: '700' },
+    botonFlotante: {
+      position: 'absolute',
+      right: spacing.lg,
+      bottom: spacing.lg,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: '0 3px 6px rgba(0,0,0,0.2)',
+    },
+  });
+}

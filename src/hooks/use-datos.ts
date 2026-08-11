@@ -1,7 +1,7 @@
 import { useApp } from '../app-context';
 import { useCollection } from './use-collection';
 import { useSingleton } from './use-singleton';
-import type { Expense, Sector, Budget, SavingMovement, Investment, InvestmentSale, BrokerCash } from '../domain/types';
+import type { Expense, Sector, Budget, SavingMovement, Investment, InvestmentSale, BrokerCash, Objetivo } from '../domain/types';
 
 export function useGastos(): Expense[] {
   const { repos } = useApp();
@@ -46,4 +46,9 @@ export function useBrokerCash(): BrokerCash {
     suscribir: (cb) => repos.brokerCash.suscribir(cb),
     valorInicial: { id: 'actual', centavosArs: 0 },
   });
+}
+
+export function useObjetivos(): Objetivo[] {
+  const { repos } = useApp();
+  return useCollection<Objetivo>({ listar: () => repos.goals.listar(), suscribir: (cb) => repos.goals.suscribir(cb) });
 }
