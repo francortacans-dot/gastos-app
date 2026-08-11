@@ -11,6 +11,8 @@ import { MoneyText } from '../../src/components/money-text';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import type { Investment, InvestmentSale } from '../../src/domain/types';
+import { generarCsvPortfolio } from '../../src/domain/export-csv';
+import { compartirCsv } from '../../src/services/compartir-csv';
 
 export default function Inversiones() {
   const router = useRouter();
@@ -42,6 +44,11 @@ export default function Inversiones() {
 
   async function eliminarPosicion(id: string) {
     await repos.investments.eliminar(id);
+  }
+
+  async function exportar() {
+    const csv = generarCsvPortfolio(inversiones, brokerCash);
+    await compartirCsv(csv);
   }
 
   function renderPosicion({ item }: { item: Investment }) {
@@ -84,6 +91,9 @@ export default function Inversiones() {
         ListHeaderComponent={
           <View>
             <View style={estilos.filaMoneda}>
+              <Pressable onPress={exportar} style={estilos.botonExportar}>
+                <Text style={estilos.textoExportar}>Exportar</Text>
+              </Pressable>
               <Pressable onPress={() => preferencias.setMonedaVisualizacion('ARS')}>
                 <Text style={[estilos.toggle, preferencias.monedaVisualizacion === 'ARS' && estilos.toggleActivo]}>ARS</Text>
               </Pressable>
@@ -179,6 +189,8 @@ const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: colors.bg },
   lista: { padding: spacing.md, paddingBottom: spacing.xxl * 2 },
   filaMoneda: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: spacing.sm },
+  botonExportar: { marginRight: 'auto', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  textoExportar: { color: colors.blue, fontWeight: '600' },
   toggle: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, color: colors.text3, fontWeight: '600' },
   toggleActivo: { color: colors.primary, textDecorationLine: 'underline' },
   tarjetaResumen: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.lg, marginBottom: spacing.md },
