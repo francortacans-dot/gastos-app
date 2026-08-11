@@ -31,8 +31,8 @@ export default function InversionNueva() {
       setError('Ingresá un ticker');
       return;
     }
-    if (!Number.isFinite(nominales) || nominales <= 0) {
-      setError('Ingresá nominales válidos');
+    if (!Number.isFinite(nominales) || nominales <= 0 || !Number.isInteger(nominales)) {
+      setError('Ingresá una cantidad entera de nominales');
       return;
     }
     if (!Number.isFinite(ppc) || ppc <= 0) {
@@ -60,6 +60,8 @@ export default function InversionNueva() {
         status: 'OPEN',
       });
       router.back();
+    } catch {
+      setError('No se pudo guardar la inversión. Probá de nuevo.');
     } finally {
       setGuardando(false);
     }

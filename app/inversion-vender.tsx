@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useApp } from '../src/app-context';
-import { useInversiones } from '../src/hooks/use-datos';
+import { useInversiones, useBrokerCash } from '../src/hooks/use-datos';
 import { usePreferences } from '../src/preferences/use-preferences';
 import { useCotizacionActual } from '../src/hooks/use-cotizacion-actual';
 import { calcularVenta } from '../src/domain/investments';
@@ -16,6 +16,7 @@ export default function InversionVender() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { repos } = useApp();
   const inversiones = useInversiones();
+  const brokerCash = useBrokerCash();
   const preferencias = usePreferences();
   const cotizacion = useCotizacionActual(preferencias.cotizacionPreferida);
 
@@ -39,6 +40,7 @@ export default function InversionVender() {
   const datosValidos =
     Number.isFinite(nominalesVendidos) &&
     nominalesVendidos > 0 &&
+    Number.isInteger(nominalesVendidos) &&
     nominalesVendidos <= inversion.nominales &&
     Number.isFinite(precioVenta) &&
     precioVenta > 0 &&
@@ -50,8 +52,8 @@ export default function InversionVender() {
 
   async function confirmarVenta() {
     if (!inversion) return;
-    if (!Number.isFinite(nominalesVendidos) || nominalesVendidos <= 0) {
-      setError('Ingresá nominales válidos');
+    if (!Number.isFinite(nominalesVendidos) || nominalesVendidos <= 0 || !Number.isInteger(nominalesVendidos)) {
+      setError('Ingresá una cantidad entera de nominales');
       return;
     }
     if (nominalesVendidos > inversion.nominales) {
@@ -69,13 +71,15 @@ export default function InversionVender() {
 
     setGuardando(true);
     try {
-      await venderInversion(repos, inversion.id, {
+      await venderInversion(repos, inversion, brokerCash, {
         nominalesVendidos,
         precioVenta,
         cotizacionUsada: inversion.monedaOriginal === 'USD' ? cotizacion!.venta : null,
         fecha: new Date().toISOString().slice(0, 10),
       });
       router.back();
+    } catch {
+      setError('No se pudo registrar la venta. Probá de nuevo.');
     } finally {
       setGuardando(false);
     }

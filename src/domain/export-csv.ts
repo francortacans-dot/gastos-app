@@ -7,6 +7,18 @@ function numeroConDosDecimales(valor: number): string {
 }
 
 /**
+ * Escapa un campo de texto libre para CSV: lo entrecomilla si contiene coma,
+ * comilla o salto de línea (para no correr las columnas siguientes), o si
+ * empieza con =, +, - o @ (para que Excel/Sheets no lo interprete como fórmula).
+ */
+function escaparCampo(valor: string): string {
+  if (/[",\n]/.test(valor) || /^[=+\-@]/.test(valor)) {
+    return `"${valor.replace(/"/g, '""')}"`;
+  }
+  return valor;
+}
+
+/**
  * Genera el CSV del portfolio con la misma estructura que Portfolio.txt:
  * una fila CASH con el saldo del broker, el encabezado, y una fila por cada
  * inversión (abierta o cerrada).
@@ -18,11 +30,11 @@ export function generarCsvPortfolio(inversiones: Investment[], brokerCash: Broke
   const filasInversiones = inversiones.map((i) => {
     const total = (i.nominales * i.costoCentavosArsUnitario) / 100;
     return [
-      i.ticker,
+      escaparCampo(i.ticker),
       i.nominales,
       numeroConDosDecimales(i.ppc),
       numeroConDosDecimales(total),
-      i.rubro ?? '',
+      escaparCampo(i.rubro ?? ''),
       i.status,
       i.fecha,
     ].join(',');

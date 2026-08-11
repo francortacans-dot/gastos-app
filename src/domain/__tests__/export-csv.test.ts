@@ -56,4 +56,20 @@ describe('generarCsvPortfolio', () => {
 
     expect(filas[2]).toContain(',CLOSED,');
   });
+
+  it('entrecomilla el rubro si contiene una coma, para no correr las columnas', () => {
+    const inversiones = [inversion({ rubro: 'Bancos, ARG' })];
+    const csv = generarCsvPortfolio(inversiones, { id: 'actual', centavosArs: 0 });
+    const filas = csv.split('\n');
+
+    expect(filas[2]).toBe('BMA,10,9.42,94.20,"Bancos, ARG",OPEN,2026-08-11');
+  });
+
+  it('entrecomilla el rubro si empieza con =, para que no se interprete como fórmula', () => {
+    const inversiones = [inversion({ rubro: '=SUM(A1)' })];
+    const csv = generarCsvPortfolio(inversiones, { id: 'actual', centavosArs: 0 });
+    const filas = csv.split('\n');
+
+    expect(filas[2]).toBe('BMA,10,9.42,94.20,"=SUM(A1)",OPEN,2026-08-11');
+  });
 });

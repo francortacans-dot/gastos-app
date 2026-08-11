@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, FlatList, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useApp } from '../../src/app-context';
 import { useInversiones, useBrokerCash, useVentas } from '../../src/hooks/use-datos';
 import { usePreferences } from '../../src/preferences/use-preferences';
 import { useCotizacionActual } from '../../src/hooks/use-cotizacion-actual';
-import { parseAmountToCentavos, formatCentavos } from '../../src/domain/money';
+import { parseAmountToCentavos, formatCentavos, usdToCentavosArs, centavosArsToUsd } from '../../src/domain/money';
 import { costoTotalPosicion, costoTotalAbierto, patrimonioInversiones } from '../../src/domain/investments';
 import { MoneyText } from '../../src/components/money-text';
 import { colors } from '../../src/theme/colors';
@@ -30,25 +30,56 @@ export default function Inversiones() {
 
   const [editandoCash, setEditandoCash] = useState(false);
   const [cashTexto, setCashTexto] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const abiertas = inversiones.filter((i) => i.status === 'OPEN').sort((a, b) => b.fecha.localeCompare(a.fecha));
   const costoAbierto = costoTotalAbierto(inversiones);
   const patrimonio = patrimonioInversiones(inversiones, brokerCash.centavosArs);
 
   async function guardarCash() {
-    const centavos = parseAmountToCentavos(cashTexto);
-    if (centavos === null) return;
-    await repos.brokerCash.guardar(centavos);
-    setEditandoCash(false);
+    const monto = parseAmountToCentavos(cashTexto);
+    if (monto === null) return;
+    if (preferencias.monedaVisualizacion === 'USD' && !cotizacion) {
+      setError('No se pudo obtener la cotización del dólar, probá de nuevo');
+      return;
+    }
+    const centavos =
+      preferencias.monedaVisualizacion === 'USD'
+        ? usdToCentavosArs(monto / 100, cotizacion!.venta)
+        : monto;
+    try {
+      await repos.brokerCash.guardar(centavos);
+      setEditandoCash(false);
+      setError(null);
+    } catch {
+      setError('No se pudo guardar el cash del broker. Probá de nuevo.');
+    }
   }
 
-  async function eliminarPosicion(id: string) {
-    await repos.investments.eliminar(id);
+  function eliminarPosicion(id: string, ticker: string) {
+    Alert.alert('Eliminar inversión', `¿Eliminar la posición de ${ticker}? Esta acción no se puede deshacer.`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await repos.investments.eliminar(id);
+          } catch {
+            setError('No se pudo eliminar la inversión. Probá de nuevo.');
+          }
+        },
+      },
+    ]);
   }
 
   async function exportar() {
-    const csv = generarCsvPortfolio(inversiones, brokerCash);
-    await compartirCsv(csv);
+    try {
+      const csv = generarCsvPortfolio(inversiones, brokerCash);
+      await compartirCsv(csv);
+    } catch {
+      setError('No se pudo exportar el CSV. Probá de nuevo.');
+    }
   }
 
   function renderPosicion({ item }: { item: Investment }) {
@@ -72,7 +103,7 @@ export default function Inversiones() {
             <Pressable onPress={() => router.push({ pathname: '/inversion-vender', params: { id: item.id } })}>
               <Text style={estilos.linkVender}>Vender</Text>
             </Pressable>
-            <Pressable onPress={() => eliminarPosicion(item.id)}>
+            <Pressable onPress={() => eliminarPosicion(item.id, item.ticker)}>
               <Text style={estilos.linkEliminar}>Eliminar</Text>
             </Pressable>
           </View>
@@ -102,6 +133,8 @@ export default function Inversiones() {
               </Pressable>
             </View>
 
+            {error && <Text style={estilos.error}>{error}</Text>}
+
             <View style={estilos.tarjetaResumen}>
               <Text style={estilos.etiqueta}>Costo invertido</Text>
               <MoneyText
@@ -114,6 +147,7 @@ export default function Inversiones() {
               <Text style={estilos.etiqueta}>Cash en el broker</Text>
               {editandoCash ? (
                 <View style={estilos.filaEdicionCash}>
+                  <Text style={estilos.etiqueta}>{preferencias.monedaVisualizacion}</Text>
                   <TextInput
                     value={cashTexto}
                     onChangeText={setCashTexto}
@@ -129,7 +163,15 @@ export default function Inversiones() {
               ) : (
                 <Pressable
                   onPress={() => {
-                    setCashTexto(String(brokerCash.centavosArs / 100).replace('.', ','));
+                    if (preferencias.monedaVisualizacion === 'USD' && !cotizacion) {
+                      setError('No se pudo obtener la cotización del dólar, probá de nuevo');
+                      return;
+                    }
+                    const valorEnMonedaActual =
+                      preferencias.monedaVisualizacion === 'USD'
+                        ? centavosArsToUsd(brokerCash.centavosArs, cotizacion!.venta)
+                        : brokerCash.centavosArs / 100;
+                    setCashTexto(String(valorEnMonedaActual).replace('.', ','));
                     setEditandoCash(true);
                   }}
                 >
@@ -193,6 +235,7 @@ const estilos = StyleSheet.create({
   textoExportar: { color: colors.blue, fontWeight: '600' },
   toggle: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, color: colors.text3, fontWeight: '600' },
   toggleActivo: { color: colors.primary, textDecorationLine: 'underline' },
+  error: { color: colors.red, marginBottom: spacing.sm },
   tarjetaResumen: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.lg, marginBottom: spacing.md },
   etiqueta: { color: colors.text3, marginTop: spacing.sm },
   montoGrande: { fontSize: 24, fontWeight: '700', color: colors.text1 },

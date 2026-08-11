@@ -13,7 +13,7 @@ export function costoUnitarioCentavosArs(
 
 /** Costo total de una posición: nominales actuales * costo unitario. Nunca se guarda, se calcula siempre así. */
 export function costoTotalPosicion(inversion: Investment): number {
-  return inversion.nominales * inversion.costoCentavosArsUnitario;
+  return Math.round(inversion.nominales * inversion.costoCentavosArsUnitario);
 }
 
 /** Suma el costo de todas las posiciones abiertas (status OPEN). */
@@ -56,8 +56,8 @@ export function calcularVenta(
     inversion.monedaOriginal,
     cotizacionUsada
   );
-  const ingresoCentavosArs = nominalesVendidos * precioVentaCentavosArsUnitario;
-  const costoCentavosArs = nominalesVendidos * inversion.costoCentavosArsUnitario;
+  const ingresoCentavosArs = Math.round(nominalesVendidos * precioVentaCentavosArsUnitario);
+  const costoCentavosArs = Math.round(nominalesVendidos * inversion.costoCentavosArsUnitario);
   const gananciaCentavosArs = ingresoCentavosArs - costoCentavosArs;
 
   return { ingresoCentavosArs, gananciaCentavosArs };
