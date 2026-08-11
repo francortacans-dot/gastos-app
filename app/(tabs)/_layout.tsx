@@ -14,6 +14,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="historial" />
       <Tabs.Screen name="sectores" />
       <Tabs.Screen name="ahorro" />
+      <Tabs.Screen name="inversiones" />
     </Tabs>
   );
 }

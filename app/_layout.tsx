@@ -52,6 +52,8 @@ function StackConTema() {
       <Stack.Screen name="gasto-nuevo" options={{ headerShown: false, animation: 'none' }} />
       <Stack.Screen name="sector-nuevo" options={{ headerShown: false, animation: 'none' }} />
       <Stack.Screen name="objetivo-nuevo" options={{ headerShown: false, animation: 'none' }} />
+      <Stack.Screen name="inversion-nueva" options={{ headerShown: false, animation: 'none' }} />
+      <Stack.Screen name="inversion-vender" options={{ headerShown: false, animation: 'none' }} />
       <Stack.Screen
         name="config"
         options={{

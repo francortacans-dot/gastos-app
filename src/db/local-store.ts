@@ -1,6 +1,6 @@
 export interface PendingWrite {
   id: string;
-  coleccion: 'expenses' | 'sectors' | 'budgets' | 'savings' | 'goals';
+  coleccion: 'expenses' | 'sectors' | 'budgets' | 'savings' | 'goals' | 'investments' | 'investment-sales' | 'broker-cash';
   operacion: 'set' | 'delete';
   /** Datos del documento. null si operacion es 'delete'. */
   datos: Record<string, unknown> | null;

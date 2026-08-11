@@ -5,10 +5,11 @@ import { Toast } from '../../src/components/toast';
 import { useRouter } from 'expo-router';
 import { PantallaAnimada } from '../../src/components/pantalla-animada';
 import { useApp } from '../../src/app-context';
-import { useAhorros, useObjetivos } from '../../src/hooks/use-datos';
+import { useAhorros, useObjetivos, useInversiones, useBrokerCash } from '../../src/hooks/use-datos';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
 import { parseAmountToCentavos, formatCentavos } from '../../src/domain/money';
+import { patrimonioInversiones } from '../../src/domain/investments';
 import { porcentajeObjetivo } from '../../src/domain/objetivos';
 import { IconPlus } from '../../src/components/icons';
 import { useColors } from '../../src/theme/theme-context';
@@ -30,6 +31,9 @@ export default function Ahorro() {
   const [enviando, setEnviando] = useState(false);
 
   const totalAhorrado = movimientos.reduce((acc, m) => acc + m.centavosArs, 0);
+  const inversiones = useInversiones();
+  const brokerCash = useBrokerCash();
+  const patrimonioTotal = totalAhorrado + patrimonioInversiones(inversiones, brokerCash.centavosArs);
   const movimientosOrdenados = [...movimientos].sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   async function mandarAAhorro() {
@@ -64,6 +68,8 @@ export default function Ahorro() {
           <Text style={estilos.etiqueta}>Total ahorrado</Text>
           <Text style={estilos.montoGrande}>{formatCentavos(totalAhorrado)}</Text>
           <Text style={estilos.etiqueta}>Disponible para mandar a ahorro: {formatCentavos(resumen.acumuladoPrevio)}</Text>
+          <Text style={estilos.etiqueta}>Patrimonio total (ahorro + inversiones)</Text>
+          <Text style={estilos.montoGrande}>{formatCentavos(patrimonioTotal)}</Text>
         </View>
 
         <Text style={estilos.tituloSeccion}>Objetivos</Text>
