@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native';
 import { useApp } from '../../src/app-context';
-import { useAhorros } from '../../src/hooks/use-datos';
+import { useAhorros, useInversiones, useBrokerCash } from '../../src/hooks/use-datos';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
 import { parseAmountToCentavos, formatCentavos } from '../../src/domain/money';
+import { patrimonioInversiones } from '../../src/domain/investments';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 
@@ -18,6 +19,9 @@ export default function Ahorro() {
   const [error, setError] = useState<string | null>(null);
 
   const totalAhorrado = movimientos.reduce((acc, m) => acc + m.centavosArs, 0);
+  const inversiones = useInversiones();
+  const brokerCash = useBrokerCash();
+  const patrimonioTotal = totalAhorrado + patrimonioInversiones(inversiones, brokerCash.centavosArs);
   const movimientosOrdenados = [...movimientos].sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   async function mandarAAhorro() {
@@ -45,6 +49,8 @@ export default function Ahorro() {
         <Text style={estilos.etiqueta}>Total ahorrado</Text>
         <Text style={estilos.montoGrande}>{formatCentavos(totalAhorrado)}</Text>
         <Text style={estilos.etiqueta}>Disponible para mandar a ahorro: {formatCentavos(resumen.acumuladoPrevio)}</Text>
+        <Text style={estilos.etiqueta}>Patrimonio total (ahorro + inversiones)</Text>
+        <Text style={estilos.montoGrande}>{formatCentavos(patrimonioTotal)}</Text>
       </View>
 
       <View style={estilos.formulario}>
