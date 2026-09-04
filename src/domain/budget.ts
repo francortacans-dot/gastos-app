@@ -116,10 +116,9 @@ export function calcularResumenMes(params: ParametrosResumenMes): ResumenMes {
     const ahorradoHastaPrevio = ahorradoHasta(ahorros, mesPrevio, 'ingresos');
     const ahorradoHastaAntesDePrevio = ahorradoHasta(ahorros, mesAnterior(mesPrevio), 'ingresos');
     const mandadoAAhorroEnMesPrevio = ahorradoHastaPrevio - ahorradoHastaAntesDePrevio;
-    const retiradoAAhorroEnMesPrevio = retiradoADisponibleEnMes(ahorros, mesPrevio);
     acumuladoPrevio = Math.max(
       0,
-      resumenPrevio.disponible - retiradoAAhorroEnMesPrevio - mandadoAAhorroEnMesPrevio
+      resumenPrevio.disponible - mandadoAAhorroEnMesPrevio
     );
   }
 
