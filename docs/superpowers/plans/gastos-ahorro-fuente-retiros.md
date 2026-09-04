@@ -595,11 +595,13 @@ Dentro de `describe('calcularResumenMes', ...)`, después del test `'un aporte e
 
     const resumen = calcularResumenMes({ mes: '2026-06', presupuestos, gastos, ahorros });
 
-    // el disponible de mayo termina en 30000 igual que si nunca hubiera pasado nada
-    // (30000 - 15000 mandado + 15000 retirado), y eso es lo único que se arrastra:
-    // mandadoAAhorroEnMesPrevio sigue siendo 15000 (solo mira aportes), así que si
-    // el retiro también lo restara, el arrastre quedaría en 45000 en vez de 30000.
-    expect(resumen.acumuladoPrevio).toBe(15000);
+    // el disponible de mayo es 50000 - 20000 + 15000 (retirado a disponible) = 45000.
+    // mandadoAAhorroEnMesPrevio sigue siendo 15000 (solo mira el aporte; el retiro
+    // no matchea un filtro de origen). El arrastre a junio es 45000 - 15000 = 30000:
+    // el mismo valor que si el aporte y el retiro nunca hubieran pasado (50000 -
+    // 20000 = 30000), confirmando que se cancelan sin efecto neto. Si el retiro
+    // TAMBIÉN se restara del arrastre (doble conteo), el resultado sería 15000.
+    expect(resumen.acumuladoPrevio).toBe(30000);
   });
 ```
 
