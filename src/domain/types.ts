@@ -33,6 +33,17 @@ export interface Expense {
   lugar: string | null;
   descripcion: string | null;
   metodoPago: PaymentMethod | null;
+  /**
+   * De dónde sale la plata de este gasto:
+   * - 'disponible': sale del presupuesto del mes (comportamiento histórico). Cuenta
+   *   para `gastadoEnMes` (y por lo tanto para el `disponible` del mes).
+   * - 'ahorro': se paga con plata ya ahorrada. NO cuenta para `gastadoEnMes`. Al
+   *   guardarlo se crea automáticamente un retiro de ahorro vinculado (ver
+   *   `pagarGasto` en `src/repos/pagar-gasto.ts`).
+   * En ambos casos el gasto sigue sumando al total de su Sector y a su límite
+   * mensual si tiene. Gastos históricos sin este campo cuentan como 'disponible'.
+   */
+  fuente: 'disponible' | 'ahorro';
 }
 
 export interface Budget {
@@ -44,22 +55,31 @@ export interface Budget {
 
 export interface SavingMovement {
   id: string;
-  /** Positivo = se manda a ahorro. Negativo = se retira del ahorro. */
+  /** Positivo = aporte a ahorro. Negativo = retiro de ahorro. */
   centavosArs: number;
   /** Fecha ISO 'YYYY-MM-DD'. */
   fecha: string;
   nota: string | null;
   /**
-   * De dónde sale la plata que se manda a ahorro:
-   * - 'ingresos': salió del presupuesto mensual (comportamiento histórico). Tiene tope
-   *   igual al `acumuladoPrevio` y descuenta ese monto del acumulado que se arrastra
-   *   al mes siguiente.
+   * Solo aplica a aportes (centavosArs > 0): de dónde sale esa plata.
+   * - 'ingresos': salió del presupuesto mensual. Tiene tope igual al disponible del
+   *   mes y descuenta ese monto del acumulado que se arrastra al mes siguiente.
    * - 'externo': aporte que nunca pasó por el presupuesto (regalo, aguinaldo, etc.).
    *   No tiene tope y no descuenta nada del acumulado arrastrado.
-   * Movimientos históricos guardados antes de este campo no lo tienen: se deben
-   * tratar como 'ingresos' en todo cálculo y en la UI.
+   * null en retiros (centavosArs < 0). Aportes históricos sin el campo cuentan
+   * como 'ingresos'.
    */
-  origen: 'ingresos' | 'externo';
+  origen: 'ingresos' | 'externo' | null;
+  /**
+   * Solo aplica a retiros (centavosArs < 0): a dónde fue esa plata.
+   * - 'disponible': vuelve a estar disponible para gastar este mes.
+   * - 'inversiones': se suma al cash del broker.
+   * - 'gasto': se usó para pagar un gasto con fuente 'ahorro' (ver `gastoId`).
+   * null en aportes.
+   */
+  destino: 'disponible' | 'inversiones' | 'gasto' | null;
+  /** Si destino === 'gasto', el id del Expense pagado con este retiro. null en cualquier otro caso. */
+  gastoId: string | null;
 }
 
 export interface Investment {
