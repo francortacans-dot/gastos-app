@@ -8,7 +8,9 @@ import { useApp } from '../../src/app-context';
 import { useAhorros, useObjetivos, useInversiones, useBrokerCash } from '../../src/hooks/use-datos';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
-import { ahorradoHasta, mesAnterior } from '../../src/domain/budget';
+import { ahorradoHasta, mesAnterior, totalAhorrado } from '../../src/domain/budget';
+import { retirarDeAhorro } from '../../src/repos/retirar-de-ahorro';
+import type { SavingMovement } from '../../src/domain/types';
 import { parseAmountToCentavos, formatCentavos } from '../../src/domain/money';
 import { patrimonioInversiones } from '../../src/domain/investments';
 import { porcentajeObjetivo } from '../../src/domain/objetivos';
@@ -32,10 +34,15 @@ export default function Ahorro() {
   const [enviando, setEnviando] = useState(false);
   const [origen, setOrigen] = useState<'ingresos' | 'externo'>('ingresos');
 
-  const totalAhorrado = movimientos.reduce((acc, m) => acc + m.centavosArs, 0);
+  const [montoRetiroTexto, setMontoRetiroTexto] = useState('');
+  const [errorRetiro, setErrorRetiro] = useState<string | null>(null);
+  const [retirando, setRetirando] = useState(false);
+  const [destinoRetiro, setDestinoRetiro] = useState<'disponible' | 'inversiones'>('disponible');
+
+  const totalAhorradoActual = totalAhorrado(movimientos);
   const inversiones = useInversiones();
   const brokerCash = useBrokerCash();
-  const patrimonioTotal = totalAhorrado + patrimonioInversiones(inversiones, brokerCash.centavosArs);
+  const patrimonioTotal = totalAhorradoActual + patrimonioInversiones(inversiones, brokerCash.centavosArs);
   const movimientosOrdenados = [...movimientos].sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   // Lo que ya se mandó a ahorro ESTE mes desde el presupuesto (origen 'ingresos'),
@@ -62,6 +69,8 @@ export default function Ahorro() {
         fecha: new Date().toISOString().slice(0, 10),
         nota: null,
         origen,
+        destino: null,
+        gastoId: null,
       });
       setMontoTexto('');
       setError(null);
@@ -70,12 +79,36 @@ export default function Ahorro() {
     }
   }
 
+  async function retirar() {
+    if (retirando) return;
+    const centavos = parseAmountToCentavos(montoRetiroTexto);
+    if (centavos === null || centavos <= 0) {
+      setErrorRetiro('Ingresá un monto válido');
+      return;
+    }
+    setRetirando(true);
+    try {
+      await retirarDeAhorro(
+        repos,
+        { centavosArs: centavos, destino: destinoRetiro, fecha: new Date().toISOString().slice(0, 10) },
+        movimientos,
+        brokerCash
+      );
+      setMontoRetiroTexto('');
+      setErrorRetiro(null);
+    } catch (e) {
+      setErrorRetiro(e instanceof Error ? e.message : 'No se pudo retirar');
+    } finally {
+      setRetirando(false);
+    }
+  }
+
   return (
     <PantallaAnimada style={estilos.contenedor}>
       <ScrollView contentContainerStyle={estilos.contenido}>
         <View style={estilos.tarjetaTotal}>
           <Text style={estilos.etiqueta}>Total ahorrado</Text>
-          <Text style={estilos.montoGrande}>{formatCentavos(totalAhorrado)}</Text>
+          <Text style={estilos.montoGrande}>{formatCentavos(totalAhorradoActual)}</Text>
           <Text style={estilos.etiqueta}>Disponible para mandar a ahorro: {formatCentavos(disponibleParaAhorro)}</Text>
           <Text style={estilos.etiqueta}>Patrimonio total (ahorro + inversiones)</Text>
           <Text style={estilos.montoGrande}>{formatCentavos(patrimonioTotal)}</Text>
@@ -148,6 +181,42 @@ export default function Ahorro() {
           </Pressable>
         </View>
 
+        <Text style={estilos.tituloSeccion}>Retirar de ahorro</Text>
+        <View style={estilos.formulario}>
+          <View style={estilos.filaChips}>
+            <Pressable
+              onPress={() => setDestinoRetiro('disponible')}
+              style={[estilos.chip, destinoRetiro === 'disponible' && estilos.chipActivo]}
+            >
+              <Text style={[estilos.textoChip, destinoRetiro === 'disponible' && estilos.textoChipActivo]}>
+                Disponible del mes
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setDestinoRetiro('inversiones')}
+              style={[estilos.chip, destinoRetiro === 'inversiones' && estilos.chipActivo]}
+            >
+              <Text style={[estilos.textoChip, destinoRetiro === 'inversiones' && estilos.textoChipActivo]}>
+                Inversiones
+              </Text>
+            </Pressable>
+          </View>
+          <TextInput
+            value={montoRetiroTexto}
+            onChangeText={(t) => {
+              setMontoRetiroTexto(t);
+              setErrorRetiro(null);
+            }}
+            placeholder="Monto a retirar"
+            keyboardType="decimal-pad"
+            style={estilos.input}
+          />
+          <Toast texto={errorRetiro} tipo="error" colors={colors} />
+          <Pressable style={[estilos.boton, retirando && estilos.botonDeshabilitado]} onPress={retirar} disabled={retirando}>
+            <Text style={estilos.textoBoton}>{retirando ? 'Retirando...' : 'Retirar de ahorro'}</Text>
+          </Pressable>
+        </View>
+
         <FlatList
           data={movimientosOrdenados}
           keyExtractor={(m) => m.id}
@@ -156,9 +225,7 @@ export default function Ahorro() {
             <View style={estilos.filaMovimiento}>
               <View>
                 <Text style={estilos.fechaMovimiento}>{item.fecha}</Text>
-                <Text style={estilos.etiquetaOrigen}>
-                  {(item.origen ?? 'ingresos') === 'ingresos' ? 'De presupuesto' : 'Aporte externo'}
-                </Text>
+                <Text style={estilos.etiquetaOrigen}>{etiquetaMovimiento(item)}</Text>
               </View>
               <Text style={estilos.montoMovimiento}>{formatCentavos(item.centavosArs)}</Text>
             </View>
@@ -172,6 +239,15 @@ export default function Ahorro() {
       </Pressable>
     </PantallaAnimada>
   );
+}
+
+function etiquetaMovimiento(m: SavingMovement): string {
+  if (m.centavosArs >= 0) {
+    return (m.origen ?? 'ingresos') === 'ingresos' ? 'De presupuesto' : 'Aporte externo';
+  }
+  if (m.destino === 'inversiones') return 'Retiro → inversiones';
+  if (m.destino === 'gasto') return 'Retiro → gasto';
+  return 'Retiro → disponible del mes';
 }
 
 function crearEstilos(colors: Colors) {
