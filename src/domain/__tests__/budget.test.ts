@@ -2,6 +2,8 @@ import {
   gastadoEnMes,
   gastadoPorSector,
   ahorradoHasta,
+  retiradoADisponibleEnMes,
+  totalAhorrado,
   calcularResumenMes,
   mesAnterior,
   siguienteMes,
@@ -20,6 +22,7 @@ function gasto(parcial: Partial<Expense>): Expense {
     lugar: null,
     descripcion: null,
     metodoPago: null,
+    fuente: 'disponible',
     ...parcial,
   };
 }
@@ -31,6 +34,8 @@ function movimiento(parcial: Partial<SavingMovement>): SavingMovement {
     fecha: '2026-06-01',
     nota: null,
     origen: 'ingresos',
+    destino: null,
+    gastoId: null,
     ...parcial,
   };
 }
@@ -65,6 +70,19 @@ describe('gastadoEnMes', () => {
 
   it('devuelve 0 si no hay gastos en el mes', () => {
     expect(gastadoEnMes([], '2026-06')).toBe(0);
+  });
+
+  it('excluye los gastos pagados con ahorro (fuente ahorro)', () => {
+    const gastos = [
+      gasto({ id: 'a', centavosArs: 1000, fecha: '2026-06-05', fuente: 'disponible' }),
+      gasto({ id: 'b', centavosArs: 4000, fecha: '2026-06-06', fuente: 'ahorro' }),
+    ];
+    expect(gastadoEnMes(gastos, '2026-06')).toBe(1000);
+  });
+
+  it('trata los gastos históricos sin campo fuente como "disponible"', () => {
+    const gastos = [{ id: 'a', centavosArs: 1000, fecha: '2026-06-05' } as Expense];
+    expect(gastadoEnMes(gastos, '2026-06')).toBe(1000);
   });
 });
 
@@ -140,6 +158,45 @@ describe('ahorradoHasta con filtro de origen', () => {
     ] as SavingMovement[];
     expect(ahorradoHasta(movimientos, '2026-06', 'ingresos')).toBe(4000);
     expect(ahorradoHasta(movimientos, '2026-06', 'externo')).toBe(0);
+  });
+
+  it('un retiro nunca matchea un filtro de origen, aunque tenga origen seteado', () => {
+    const movimientos: SavingMovement[] = [
+      movimiento({ id: 'm1', centavosArs: 5000, fecha: '2026-06-01', origen: 'ingresos' }),
+      movimiento({ id: 'm2', centavosArs: -2000, fecha: '2026-06-02', origen: 'ingresos' }),
+    ];
+    expect(ahorradoHasta(movimientos, '2026-06', 'ingresos')).toBe(5000);
+  });
+});
+
+describe('retiradoADisponibleEnMes', () => {
+  it('suma solo los retiros con destino disponible de ese mes', () => {
+    const movimientos: SavingMovement[] = [
+      movimiento({ id: 'm1', centavosArs: -2000, fecha: '2026-06-05', destino: 'disponible' }),
+      movimiento({ id: 'm2', centavosArs: -1000, fecha: '2026-06-06', destino: 'inversiones' }),
+      movimiento({ id: 'm3', centavosArs: -500, fecha: '2026-05-01', destino: 'disponible' }),
+      movimiento({ id: 'm4', centavosArs: 3000, fecha: '2026-06-07', origen: 'ingresos' }),
+    ];
+    expect(retiradoADisponibleEnMes(movimientos, '2026-06')).toBe(2000);
+  });
+
+  it('devuelve 0 si no hay retiros con destino disponible ese mes', () => {
+    expect(retiradoADisponibleEnMes([], '2026-06')).toBe(0);
+  });
+});
+
+describe('totalAhorrado', () => {
+  it('suma todos los movimientos sin filtrar por mes', () => {
+    const movimientos: SavingMovement[] = [
+      movimiento({ id: 'm1', centavosArs: 5000, fecha: '2026-04-01' }),
+      movimiento({ id: 'm2', centavosArs: -2000, fecha: '2026-06-01' }),
+      movimiento({ id: 'm3', centavosArs: 1000, fecha: '2027-01-01' }),
+    ];
+    expect(totalAhorrado(movimientos)).toBe(4000);
+  });
+
+  it('devuelve 0 sin movimientos', () => {
+    expect(totalAhorrado([])).toBe(0);
   });
 });
 
@@ -224,6 +281,53 @@ describe('calcularResumenMes', () => {
 
     expect(resumen.acumuladoPrevio).toBe(30000);
     expect(resumen.disponible).toBe(100000 + 30000);
+  });
+
+  it('un retiro con destino disponible sube el disponible de ese mismo mes', () => {
+    const presupuestos: Budget[] = [{ mes: '2026-06', totalCentavos: 100000 }];
+    const gastos: Expense[] = [gasto({ centavosArs: 30000, fecha: '2026-06-10' })];
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 'r1', centavosArs: -20000, fecha: '2026-06-15', origen: null, destino: 'disponible' }),
+    ];
+
+    const resumen = calcularResumenMes({ mes: '2026-06', presupuestos, gastos, ahorros });
+
+    // 100000 (presupuesto) - 30000 (gastado) + 20000 (retirado a disponible)
+    expect(resumen.disponible).toBe(90000);
+  });
+
+  it('un retiro con destino inversiones NO sube el disponible del mes', () => {
+    const presupuestos: Budget[] = [{ mes: '2026-06', totalCentavos: 100000 }];
+    const gastos: Expense[] = [gasto({ centavosArs: 30000, fecha: '2026-06-10' })];
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 'r1', centavosArs: -20000, fecha: '2026-06-15', origen: null, destino: 'inversiones' }),
+    ];
+
+    const resumen = calcularResumenMes({ mes: '2026-06', presupuestos, gastos, ahorros });
+
+    expect(resumen.disponible).toBe(70000);
+  });
+
+  it('mandar a ahorro y retirar a disponible el mismo monto en el mismo mes no cambia el arrastre al mes siguiente', () => {
+    const presupuestos: Budget[] = [
+      { mes: '2026-05', totalCentavos: 50000 },
+      { mes: '2026-06', totalCentavos: 100000 },
+    ];
+    // en mayo se gastaron 20000 de 50000: sobran 30000 que arrastrarían a junio
+    const gastos: Expense[] = [gasto({ id: 'may', centavosArs: 20000, fecha: '2026-05-10' })];
+    // se manda 15000 a ahorro y se retira ese mismo monto de vuelta a disponible, todo en mayo
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 'a1', centavosArs: 15000, fecha: '2026-05-20', origen: 'ingresos', destino: null }),
+      movimiento({ id: 'r1', centavosArs: -15000, fecha: '2026-05-25', origen: null, destino: 'disponible' }),
+    ];
+
+    const resumen = calcularResumenMes({ mes: '2026-06', presupuestos, gastos, ahorros });
+
+    // el disponible de mayo termina en 30000 igual que si nunca hubiera pasado nada
+    // (30000 - 15000 mandado + 15000 retirado), y eso es lo único que se arrastra:
+    // mandadoAAhorroEnMesPrevio sigue siendo 15000 (solo mira aportes), así que si
+    // el retiro también lo restara, el arrastre quedaría en 45000 en vez de 30000.
+    expect(resumen.acumuladoPrevio).toBe(15000);
   });
 
   it('un mes sin presupuesto definido cuenta como presupuesto 0', () => {
