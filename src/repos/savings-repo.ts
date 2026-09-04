@@ -1,4 +1,4 @@
-import { doc, setDoc, collection, onSnapshot, type Firestore } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, onSnapshot, type Firestore } from 'firebase/firestore';
 import * as Crypto from 'expo-crypto';
 import type { LocalStore } from '../db/local-store';
 import type { SavingMovement } from '../domain/types';
@@ -13,6 +13,7 @@ interface DepsSavingsRepo {
 export interface SavingsRepo {
   listar(): Promise<SavingMovement[]>;
   agregar(movimiento: Omit<SavingMovement, 'id'>): Promise<SavingMovement>;
+  eliminar(id: string): Promise<void>;
   suscribir(cb: (movimientos: SavingMovement[]) => void): () => void;
 }
 
@@ -53,6 +54,23 @@ export function crearSavingsRepo(deps: DepsSavingsRepo): SavingsRepo {
       }
 
       return movimiento;
+    },
+
+    async eliminar(id: string): Promise<void> {
+      const actuales = await leerLocal();
+      await escribirLocal(actuales.filter((m) => m.id !== id));
+
+      await localStore.guardarPendiente({
+        id,
+        coleccion: COLECCION,
+        operacion: 'delete',
+        datos: null,
+        creadoEn: Date.now(),
+      });
+
+      if (estaOnline()) {
+        await deleteDoc(doc(db, 'users', uid, COLECCION, id)).catch(() => {});
+      }
     },
 
     suscribir(cb: (movimientos: SavingMovement[]) => void): () => void {
