@@ -21,51 +21,80 @@ export default function InversionNueva() {
   const colors = useColors();
   const estilos = useMemo(() => crearEstilos(colors), [colors]);
 
+  const [modo, setModo] = useState<'detallado' | 'montoTotal'>('detallado');
   const [ticker, setTicker] = useState('');
   const [nominalesTexto, setNominalesTexto] = useState('');
   const [ppcTexto, setPpcTexto] = useState('');
   const [moneda, setMoneda] = useState<Currency>('ARS');
   const [rubro, setRubro] = useState('');
+  const [etiquetaMonto, setEtiquetaMonto] = useState('');
+  const [montoTotalTexto, setMontoTotalTexto] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
-  async function guardar() {
+  async function guardarDetallado(): Promise<boolean> {
     const nominales = Number(nominalesTexto.replace(',', '.'));
     const ppc = Number(ppcTexto.replace(',', '.'));
 
     if (!ticker.trim()) {
       setError('Ingresá un ticker');
-      return;
+      return false;
     }
     if (!Number.isFinite(nominales) || nominales <= 0 || !Number.isInteger(nominales)) {
       setError('Ingresá una cantidad entera de nominales');
-      return;
+      return false;
     }
     if (!Number.isFinite(ppc) || ppc <= 0) {
       setError('Ingresá un PPC válido');
-      return;
+      return false;
     }
     if (moneda === 'USD' && !cotizacion) {
       setError('No se pudo obtener la cotización del dólar, probá de nuevo');
-      return;
+      return false;
     }
 
     const cotizacionUsada = moneda === 'USD' ? cotizacion!.venta : null;
 
+    await repos.investments.agregar({
+      ticker: ticker.trim().toUpperCase(),
+      nominales,
+      ppc,
+      monedaOriginal: moneda,
+      cotizacionUsada,
+      costoCentavosArsUnitario: costoUnitarioCentavosArs(ppc, moneda, cotizacionUsada),
+      rubro: rubro.trim() || null,
+      fecha: new Date().toISOString().slice(0, 10),
+      status: 'OPEN',
+    });
+    return true;
+  }
+
+  async function guardarMontoTotal(): Promise<boolean> {
+    const monto = Number(montoTotalTexto.replace(',', '.'));
+    if (!Number.isFinite(monto) || monto <= 0) {
+      setError('Ingresá un monto válido');
+      return false;
+    }
+
+    await repos.investments.agregar({
+      ticker: etiquetaMonto.trim() || 'Cartera',
+      nominales: 1,
+      ppc: monto,
+      monedaOriginal: 'ARS',
+      cotizacionUsada: null,
+      costoCentavosArsUnitario: costoUnitarioCentavosArs(monto, 'ARS', null),
+      rubro: null,
+      fecha: new Date().toISOString().slice(0, 10),
+      status: 'OPEN',
+    });
+    return true;
+  }
+
+  async function guardar() {
     setGuardando(true);
     try {
-      await repos.investments.agregar({
-        ticker: ticker.trim().toUpperCase(),
-        nominales,
-        ppc,
-        monedaOriginal: moneda,
-        cotizacionUsada,
-        costoCentavosArsUnitario: costoUnitarioCentavosArs(ppc, moneda, cotizacionUsada),
-        rubro: rubro.trim() || null,
-        fecha: new Date().toISOString().slice(0, 10),
-        status: 'OPEN',
-      });
-      router.back();
+      const guardado = modo === 'detallado' ? await guardarDetallado() : await guardarMontoTotal();
+      if (guardado) router.back();
     } catch {
       setError('No se pudo guardar la inversión. Probá de nuevo.');
     } finally {
@@ -75,38 +104,77 @@ export default function InversionNueva() {
 
   return (
     <BottomSheet titulo="Nueva inversión" onCerrar={() => router.back()}>
-      <Text style={estilos.etiquetaCampo}>Ticker</Text>
-      <TextInput value={ticker} onChangeText={setTicker} style={estilos.inputTexto} placeholder="Ej: GOOGL" autoCapitalize="characters" />
-
-      <Text style={estilos.etiquetaCampo}>Nominales</Text>
-      <TextInput
-        value={nominalesTexto}
-        onChangeText={setNominalesTexto}
-        style={estilos.inputTexto}
-        placeholder="Ej: 10"
-        keyboardType="number-pad"
-      />
-
-      <Text style={estilos.etiquetaCampo}>PPC (precio promedio de compra)</Text>
-      <TextInput
-        value={ppcTexto}
-        onChangeText={setPpcTexto}
-        style={estilos.inputTexto}
-        placeholder="Ej: 9,42"
-        keyboardType="decimal-pad"
-      />
-
-      <Text style={estilos.etiquetaCampo}>Moneda</Text>
       <View style={estilos.filaChips}>
-        {(['ARS', 'USD'] as Currency[]).map((m) => (
-          <Pressable key={m} onPress={() => setMoneda(m)} style={[estilos.chip, moneda === m && estilos.chipActivo]}>
-            <Text style={[estilos.textoChip, moneda === m && estilos.textoChipActivo]}>{m}</Text>
-          </Pressable>
-        ))}
+        <Pressable
+          onPress={() => {
+            setModo('detallado');
+            setError(null);
+          }}
+          style={[estilos.chip, modo === 'detallado' && estilos.chipActivo]}
+        >
+          <Text style={[estilos.textoChip, modo === 'detallado' && estilos.textoChipActivo]}>Detallado</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            setModo('montoTotal');
+            setError(null);
+          }}
+          style={[estilos.chip, modo === 'montoTotal' && estilos.chipActivo]}
+        >
+          <Text style={[estilos.textoChip, modo === 'montoTotal' && estilos.textoChipActivo]}>Monto total</Text>
+        </Pressable>
       </View>
 
-      <Text style={estilos.etiquetaCampo}>Rubro (opcional)</Text>
-      <TextInput value={rubro} onChangeText={setRubro} style={estilos.inputTexto} placeholder="Ej: Tech" />
+      {modo === 'detallado' ? (
+        <>
+          <Text style={estilos.etiquetaCampo}>Ticker</Text>
+          <TextInput value={ticker} onChangeText={setTicker} style={estilos.inputTexto} placeholder="Ej: GOOGL" autoCapitalize="characters" />
+
+          <Text style={estilos.etiquetaCampo}>Nominales</Text>
+          <TextInput
+            value={nominalesTexto}
+            onChangeText={setNominalesTexto}
+            style={estilos.inputTexto}
+            placeholder="Ej: 10"
+            keyboardType="number-pad"
+          />
+
+          <Text style={estilos.etiquetaCampo}>PPC (precio promedio de compra)</Text>
+          <TextInput
+            value={ppcTexto}
+            onChangeText={setPpcTexto}
+            style={estilos.inputTexto}
+            placeholder="Ej: 9,42"
+            keyboardType="decimal-pad"
+          />
+
+          <Text style={estilos.etiquetaCampo}>Moneda</Text>
+          <View style={estilos.filaChips}>
+            {(['ARS', 'USD'] as Currency[]).map((m) => (
+              <Pressable key={m} onPress={() => setMoneda(m)} style={[estilos.chip, moneda === m && estilos.chipActivo]}>
+                <Text style={[estilos.textoChip, moneda === m && estilos.textoChipActivo]}>{m}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={estilos.etiquetaCampo}>Rubro (opcional)</Text>
+          <TextInput value={rubro} onChangeText={setRubro} style={estilos.inputTexto} placeholder="Ej: Tech" />
+        </>
+      ) : (
+        <>
+          <Text style={estilos.etiquetaCampo}>Etiqueta (opcional)</Text>
+          <TextInput value={etiquetaMonto} onChangeText={setEtiquetaMonto} style={estilos.inputTexto} placeholder="Ej: Cartera ByMA" />
+
+          <Text style={estilos.etiquetaCampo}>Monto total (ARS)</Text>
+          <TextInput
+            value={montoTotalTexto}
+            onChangeText={setMontoTotalTexto}
+            style={estilos.inputTexto}
+            placeholder="Ej: 500000"
+            keyboardType="decimal-pad"
+          />
+        </>
+      )}
 
       <Toast texto={error} tipo="error" colors={colors} />
 
