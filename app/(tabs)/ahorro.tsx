@@ -8,6 +8,7 @@ import { useApp } from '../../src/app-context';
 import { useAhorros, useObjetivos, useInversiones, useBrokerCash } from '../../src/hooks/use-datos';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
+import { ahorradoHasta, mesAnterior } from '../../src/domain/budget';
 import { parseAmountToCentavos, formatCentavos } from '../../src/domain/money';
 import { patrimonioInversiones } from '../../src/domain/investments';
 import { porcentajeObjetivo } from '../../src/domain/objetivos';
@@ -37,6 +38,12 @@ export default function Ahorro() {
   const patrimonioTotal = totalAhorrado + patrimonioInversiones(inversiones, brokerCash.centavosArs);
   const movimientosOrdenados = [...movimientos].sort((a, b) => b.fecha.localeCompare(a.fecha));
 
+  // Lo que ya se mandó a ahorro ESTE mes desde el presupuesto (origen 'ingresos'),
+  // para no dejar mandar dos veces el mismo disponible dentro del mismo mes.
+  const enviadoEsteMesDesdePresupuesto =
+    ahorradoHasta(movimientos, mes, 'ingresos') - ahorradoHasta(movimientos, mesAnterior(mes), 'ingresos');
+  const disponibleParaAhorro = resumen.disponible - enviadoEsteMesDesdePresupuesto;
+
   async function mandarAAhorro() {
     if (enviando) return;
     const centavos = parseAmountToCentavos(montoTexto);
@@ -44,8 +51,8 @@ export default function Ahorro() {
       setError('Ingresá un monto válido');
       return;
     }
-    if (origen === 'ingresos' && centavos > resumen.disponible) {
-      setError(`No podés mandar más de ${formatCentavos(resumen.disponible)} (tu disponible de este mes)`);
+    if (origen === 'ingresos' && centavos > disponibleParaAhorro) {
+      setError(`No podés mandar más de ${formatCentavos(disponibleParaAhorro)} (tu disponible de este mes)`);
       return;
     }
     setEnviando(true);
@@ -69,7 +76,7 @@ export default function Ahorro() {
         <View style={estilos.tarjetaTotal}>
           <Text style={estilos.etiqueta}>Total ahorrado</Text>
           <Text style={estilos.montoGrande}>{formatCentavos(totalAhorrado)}</Text>
-          <Text style={estilos.etiqueta}>Disponible para mandar a ahorro: {formatCentavos(resumen.disponible)}</Text>
+          <Text style={estilos.etiqueta}>Disponible para mandar a ahorro: {formatCentavos(disponibleParaAhorro)}</Text>
           <Text style={estilos.etiqueta}>Patrimonio total (ahorro + inversiones)</Text>
           <Text style={estilos.montoGrande}>{formatCentavos(patrimonioTotal)}</Text>
         </View>
