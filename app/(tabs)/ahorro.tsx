@@ -247,7 +247,8 @@ function etiquetaMovimiento(m: SavingMovement): string {
   }
   if (m.destino === 'inversiones') return 'Retiro → inversiones';
   if (m.destino === 'gasto') return 'Retiro → gasto';
-  return 'Retiro → disponible del mes';
+  if (m.destino === 'disponible') return 'Retiro → disponible del mes';
+  return 'Retiro';
 }
 
 function crearEstilos(colors: Colors) {

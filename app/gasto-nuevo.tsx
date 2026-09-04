@@ -94,13 +94,19 @@ export default function GastoNuevo() {
         <Text style={estilos.etiquetaCampo}>Fuente</Text>
         <View style={estilos.filaChips}>
           <Pressable
-            onPress={() => setFuente('disponible')}
+            onPress={() => {
+              setFuente('disponible');
+              setError(null);
+            }}
             style={[estilos.chip, { borderColor: colors.border }, fuente === 'disponible' && { backgroundColor: colors.primary }]}
           >
             <Text style={[estilos.textoChip, fuente === 'disponible' && { color: colors.onPrimary }]}>Presupuesto</Text>
           </Pressable>
           <Pressable
-            onPress={() => setFuente('ahorro')}
+            onPress={() => {
+              setFuente('ahorro');
+              setError(null);
+            }}
             style={[estilos.chip, { borderColor: colors.border }, fuente === 'ahorro' && { backgroundColor: colors.primary }]}
           >
             <Text style={[estilos.textoChip, fuente === 'ahorro' && { color: colors.onPrimary }]}>Ahorro</Text>

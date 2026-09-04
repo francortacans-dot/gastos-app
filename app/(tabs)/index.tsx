@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { TextInputTema as TextInput } from '../../src/components/text-input-tema';
+import { Toast } from '../../src/components/toast';
 import { PantallaAnimada } from '../../src/components/pantalla-animada';
 import { useRouter } from 'expo-router';
 import { useApp } from '../../src/app-context';
@@ -40,6 +41,7 @@ export default function Home() {
 
   const [editandoPresupuesto, setEditandoPresupuesto] = useState(false);
   const [presupuestoTexto, setPresupuestoTexto] = useState('');
+  const [errorBorrado, setErrorBorrado] = useState<string | null>(null);
 
   function abrirEdicionPresupuesto() {
     setPresupuestoTexto(resumen.presupuestoDelMes > 0 ? String(resumen.presupuestoDelMes / 100).replace('.', ',') : '');
@@ -51,6 +53,15 @@ export default function Home() {
     if (centavos === null) return;
     await repos.budgets.guardar({ mes, totalCentavos: centavos });
     setEditandoPresupuesto(false);
+  }
+
+  async function borrarGasto(gasto: (typeof gastos)[number]) {
+    setErrorBorrado(null);
+    try {
+      await eliminarGasto(repos, gasto, movimientos);
+    } catch {
+      setErrorBorrado('No se pudo borrar el gasto. Probá de nuevo.');
+    }
   }
 
   const gastoPorSector = gastadoPorSector(gastos, mes);
@@ -199,6 +210,7 @@ export default function Home() {
           </View>
 
           <Text style={estilos.seccionTitulo}>Últimos gastos</Text>
+          <Toast texto={errorBorrado} tipo="error" colors={colors} />
           <View style={estilos.seccion}>
             {ultimosGastos.length === 0 ? (
               <Text style={estilos.vacio}>Todavía no cargaste gastos este mes.</Text>
@@ -208,9 +220,12 @@ export default function Home() {
                   <View style={estilos.infoGasto}>
                     <Text style={estilos.descripcionGasto}>{g.descripcion ?? g.lugar ?? 'Gasto sin descripción'}</Text>
                     <Text style={estilos.fechaGasto}>{g.fecha}</Text>
+                    {(g.fuente ?? 'disponible') === 'ahorro' && (
+                      <Text style={estilos.etiquetaAhorro}>Pagado con ahorro</Text>
+                    )}
                   </View>
                   <Text style={estilos.montoGastoFila}>{formatCentavos(g.centavosArs)}</Text>
-                  <Pressable onPress={() => eliminarGasto(repos, g, movimientos)} hitSlop={8} style={estilos.botonBorrarGasto}>
+                  <Pressable onPress={() => borrarGasto(g)} hitSlop={8} style={estilos.botonBorrarGasto}>
                     <IconTrash color={colors.text4} size={16} />
                   </Pressable>
                 </View>
@@ -317,6 +332,7 @@ function crearEstilos(colors: Colors) {
     infoGasto: { flex: 1 },
     descripcionGasto: { color: colors.text1, fontWeight: '600' },
     fechaGasto: { color: colors.text3, fontSize: 12 },
+    etiquetaAhorro: { color: colors.text3, fontSize: 11 },
     montoGastoFila: { color: colors.text1, fontWeight: '700' },
     botonFlotante: {
       position: 'absolute',

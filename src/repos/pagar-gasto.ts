@@ -20,6 +20,9 @@ export async function pagarGasto(
   gasto: Omit<Expense, 'id'>,
   movimientosActuales: SavingMovement[]
 ): Promise<ResultadoPagoGasto> {
+  if (gasto.centavosArs <= 0) {
+    throw new Error('El monto del gasto debe ser mayor a 0');
+  }
   if (gasto.fuente === 'ahorro') {
     const saldoAhorro = totalAhorrado(movimientosActuales);
     if (gasto.centavosArs > saldoAhorro) {

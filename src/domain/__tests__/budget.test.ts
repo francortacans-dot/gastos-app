@@ -332,6 +332,25 @@ describe('calcularResumenMes', () => {
     expect(resumen.acumuladoPrevio).toBe(30000);
   });
 
+  it('un retiro sin aporte correspondiente en el mismo mes tambien se arrastra una sola vez', () => {
+    const presupuestos: Budget[] = [
+      { mes: '2026-05', totalCentavos: 50000 },
+      { mes: '2026-06', totalCentavos: 100000 },
+    ];
+    const gastos: Expense[] = [gasto({ id: 'may', centavosArs: 20000, fecha: '2026-05-10' })];
+    // retiro a disponible en mayo, sin ningun aporte correspondiente ese mismo mes
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 'r1', centavosArs: -10000, fecha: '2026-05-15', origen: null, destino: 'disponible' }),
+    ];
+
+    const resumen = calcularResumenMes({ mes: '2026-06', presupuestos, gastos, ahorros });
+
+    // disponible de mayo = 50000 - 20000 + 10000 (retirado) = 40000.
+    // mandadoAAhorroEnMesPrevio = 0 (no hay ningun aporte con origen 'ingresos' en mayo).
+    // arrastre a junio = max(0, 40000 - 0) = 40000: el retiro se cuenta una sola vez.
+    expect(resumen.acumuladoPrevio).toBe(40000);
+  });
+
   it('un mes sin presupuesto definido cuenta como presupuesto 0', () => {
     const resumen = calcularResumenMes({
       mes: '2026-06',

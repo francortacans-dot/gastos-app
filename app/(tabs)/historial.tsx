@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, FlatList, StyleSheet } from 'react-native';
 import { PantallaAnimada } from '../../src/components/pantalla-animada';
+import { Toast } from '../../src/components/toast';
 import { useApp } from '../../src/app-context';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
@@ -33,6 +34,7 @@ export default function Historial() {
   const colors = useColors();
   const estilos = useMemo(() => crearEstilos(colors), [colors]);
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
+  const [errorBorrado, setErrorBorrado] = useState<string | null>(null);
 
   const tendencia: BarraDato[] = useMemo(() => {
     const meses: string[] = [mes];
@@ -55,6 +57,15 @@ export default function Historial() {
 
   const fechasConGasto = new Set(gastosDelMes.map((g) => g.fecha));
   const gastosAMostrar = diaSeleccionado ? gastosDelMes.filter((g) => g.fecha === diaSeleccionado) : gastosDelMes;
+
+  async function borrarGasto(gasto: (typeof gastos)[number]) {
+    setErrorBorrado(null);
+    try {
+      await eliminarGasto(repos, gasto, movimientos);
+    } catch {
+      setErrorBorrado('No se pudo borrar el gasto. Probá de nuevo.');
+    }
+  }
 
   return (
     <PantallaAnimada>
@@ -91,6 +102,8 @@ export default function Historial() {
         </Pressable>
       )}
 
+      <Toast texto={errorBorrado} tipo="error" colors={colors} />
+
       <FlatList
         data={gastosAMostrar}
         keyExtractor={(g) => g.id}
@@ -100,9 +113,12 @@ export default function Historial() {
             <View style={estilos.infoGasto}>
               <Text style={estilos.descripcionGasto}>{item.descripcion ?? item.lugar ?? 'Gasto sin descripción'}</Text>
               <Text style={estilos.fechaGasto}>{item.fecha}</Text>
+              {(item.fuente ?? 'disponible') === 'ahorro' && (
+                <Text style={estilos.etiquetaAhorro}>Pagado con ahorro</Text>
+              )}
             </View>
             <Text style={estilos.montoGasto}>{formatCentavos(item.centavosArs)}</Text>
-            <Pressable onPress={() => eliminarGasto(repos, item, movimientos)} hitSlop={8} style={estilos.botonBorrar}>
+            <Pressable onPress={() => borrarGasto(item)} hitSlop={8} style={estilos.botonBorrar}>
               <IconTrash color={colors.text4} size={16} />
             </Pressable>
           </View>
@@ -134,6 +150,7 @@ function crearEstilos(colors: Colors) {
     infoGasto: { flex: 1 },
     descripcionGasto: { color: colors.text1, fontWeight: '600' },
     fechaGasto: { color: colors.text3, fontSize: 12 },
+    etiquetaAhorro: { color: colors.text3, fontSize: 11 },
     montoGasto: { color: colors.text1, fontWeight: '700' },
     botonBorrar: { padding: 4 },
     vacio: { color: colors.text3, textAlign: 'center', marginTop: spacing.md },

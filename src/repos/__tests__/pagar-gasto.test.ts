@@ -81,6 +81,17 @@ describe('pagarGasto', () => {
     expect(movimientosCreados).toHaveLength(1);
   });
 
+  it('rechaza un gasto con centavosArs <= 0, sin guardar nada', async () => {
+    const { repos, gastosCreados, movimientosCreados } = crearReposFake();
+
+    await expect(
+      pagarGasto(repos, crearGastoParcial({ centavosArs: 0 }), [])
+    ).rejects.toThrow();
+
+    expect(gastosCreados).toHaveLength(0);
+    expect(movimientosCreados).toHaveLength(0);
+  });
+
   it('fuente ahorro: rechaza si el gasto supera el saldo de ahorro, sin guardar nada', async () => {
     const { repos, gastosCreados, movimientosCreados } = crearReposFake();
     const movimientos = [crearMovimiento({ centavosArs: 3000 })];

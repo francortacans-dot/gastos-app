@@ -22,6 +22,9 @@ export async function retirarDeAhorro(
   movimientosActuales: SavingMovement[],
   brokerCashActual: BrokerCash
 ): Promise<SavingMovement> {
+  if (params.centavosArs <= 0) {
+    throw new Error('El monto a retirar debe ser mayor a 0');
+  }
   const saldoAhorro = totalAhorrado(movimientosActuales);
   if (params.centavosArs > saldoAhorro) {
     throw new Error(`No podés retirar más de ${formatCentavos(saldoAhorro)} (tu saldo de ahorro)`);

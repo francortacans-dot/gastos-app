@@ -89,7 +89,7 @@ interface ParametrosResumenMes {
 /**
  * Calcula, de forma dinámica y sin persistir estado de "cierre de mes":
  *   acumuladoPrevio(mes) = disponible(mesAnterior) - ahorradoEnEseMes
- *   disponible(mes) = presupuestoDelMes + acumuladoPrevio - gastado
+ *   disponible(mes) = presupuestoDelMes + acumuladoPrevio - gastado + retiradoADisponibleEnMes
  *
  * Recorre hacia atrás desde `mes` hasta el primer mes que tiene presupuesto
  * cargado, para no arrastrar sobrantes de un pasado sin datos.

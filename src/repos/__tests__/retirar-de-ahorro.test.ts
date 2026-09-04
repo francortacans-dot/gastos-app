@@ -72,6 +72,19 @@ describe('retirarDeAhorro', () => {
     expect(obtenerBrokerCash()).toBe(54000);
   });
 
+  it('rechaza un retiro con centavosArs <= 0, sin escribir nada', async () => {
+    const { repos, movimientosCreados } = crearReposFake();
+    const movimientos = [crearMovimiento({ centavosArs: 10000 })];
+    const brokerCash: BrokerCash = { id: 'actual', centavosArs: 0 };
+
+    await expect(
+      retirarDeAhorro(repos, { centavosArs: 0, destino: 'disponible', fecha: '2026-06-05' }, movimientos, brokerCash)
+    ).rejects.toThrow();
+
+    expect(movimientosCreados).toHaveLength(0);
+    expect((repos.brokerCash.guardar as jest.Mock)).not.toHaveBeenCalled();
+  });
+
   it('rechaza retirar más de lo que hay ahorrado, sin escribir nada', async () => {
     const { repos, movimientosCreados } = crearReposFake();
     const movimientos = [crearMovimiento({ centavosArs: 3000 })];
