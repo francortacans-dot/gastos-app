@@ -5,8 +5,10 @@ import { Toast } from '../src/components/toast';
 import { BottomSheet } from '../src/components/bottom-sheet';
 import { useRouter } from 'expo-router';
 import { useApp } from '../src/app-context';
-import { useSectores } from '../src/hooks/use-datos';
-import { parseAmountToCentavos } from '../src/domain/money';
+import { useSectores, useAhorros } from '../src/hooks/use-datos';
+import { parseAmountToCentavos, formatCentavos } from '../src/domain/money';
+import { totalAhorrado } from '../src/domain/budget';
+import { pagarGasto } from '../src/repos/pagar-gasto';
 import { useColors } from '../src/theme/theme-context';
 import type { Colors } from '../src/theme/palettes';
 import { spacing } from '../src/theme/spacing';
@@ -26,6 +28,7 @@ export default function GastoNuevo() {
   const router = useRouter();
   const { repos } = useApp();
   const sectores = useSectores();
+  const movimientos = useAhorros();
   const colors = useColors();
   const estilos = useMemo(() => crearEstilos(colors), [colors]);
 
@@ -36,6 +39,7 @@ export default function GastoNuevo() {
   const [descripcion, setDescripcion] = useState('');
   const [metodoPago, setMetodoPago] = useState<string | null>(null);
   const [metodoPersonalizado, setMetodoPersonalizado] = useState('');
+  const [fuente, setFuente] = useState<'disponible' | 'ahorro'>('disponible');
   const [guardando, setGuardando] = useState(false);
 
   async function guardar() {
@@ -47,18 +51,25 @@ export default function GastoNuevo() {
 
     setGuardando(true);
     try {
-      await repos.expenses.agregar({
-        centavosArs: centavos,
-        montoOriginal: centavos / 100,
-        monedaOriginal: 'ARS',
-        cotizacionUsada: null,
-        fecha: new Date().toISOString().slice(0, 10),
-        sectorId,
-        lugar: lugar.trim() || null,
-        descripcion: descripcion.trim() || null,
-        metodoPago: metodoPersonalizado.trim() || metodoPago,
-      });
+      await pagarGasto(
+        repos,
+        {
+          centavosArs: centavos,
+          montoOriginal: centavos / 100,
+          monedaOriginal: 'ARS',
+          cotizacionUsada: null,
+          fecha: new Date().toISOString().slice(0, 10),
+          sectorId,
+          lugar: lugar.trim() || null,
+          descripcion: descripcion.trim() || null,
+          metodoPago: metodoPersonalizado.trim() || metodoPago,
+          fuente,
+        },
+        movimientos
+      );
       router.back();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el gasto');
     } finally {
       setGuardando(false);
     }
@@ -80,6 +91,25 @@ export default function GastoNuevo() {
       <Toast texto={error} tipo="error" colors={colors} />
 
       <View style={estilos.opcionales}>
+        <Text style={estilos.etiquetaCampo}>Fuente</Text>
+        <View style={estilos.filaChips}>
+          <Pressable
+            onPress={() => setFuente('disponible')}
+            style={[estilos.chip, { borderColor: colors.border }, fuente === 'disponible' && { backgroundColor: colors.primary }]}
+          >
+            <Text style={[estilos.textoChip, fuente === 'disponible' && { color: colors.onPrimary }]}>Presupuesto</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setFuente('ahorro')}
+            style={[estilos.chip, { borderColor: colors.border }, fuente === 'ahorro' && { backgroundColor: colors.primary }]}
+          >
+            <Text style={[estilos.textoChip, fuente === 'ahorro' && { color: colors.onPrimary }]}>Ahorro</Text>
+          </Pressable>
+        </View>
+        {fuente === 'ahorro' && (
+          <Text style={estilos.ayudaFuente}>Saldo de ahorro disponible: {formatCentavos(totalAhorrado(movimientos))}</Text>
+        )}
+
         <Text style={estilos.etiquetaCampo}>Sector</Text>
         <View style={estilos.filaChips}>
           {sectores.map((s) => (
@@ -137,6 +167,7 @@ function crearEstilos(colors: Colors) {
     inputMonto: { fontSize: 40, fontWeight: '700', color: colors.text1, textAlign: 'center', marginBottom: spacing.sm },
     opcionales: { marginTop: spacing.sm, marginBottom: spacing.lg },
     etiquetaCampo: { color: colors.text2, fontWeight: '600', marginTop: spacing.sm, marginBottom: spacing.xs },
+    ayudaFuente: { color: colors.text3, fontSize: 12, marginTop: -spacing.xs, marginBottom: spacing.xs },
     filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
     chip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
     textoChip: { color: colors.text2 },
