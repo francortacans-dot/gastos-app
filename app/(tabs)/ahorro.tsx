@@ -8,7 +8,7 @@ import { useApp } from '../../src/app-context';
 import { useAhorros, useObjetivos, useInversiones, useBrokerCash } from '../../src/hooks/use-datos';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
-import { ahorradoHasta, mesAnterior, totalAhorrado } from '../../src/domain/budget';
+import { totalAhorrado } from '../../src/domain/budget';
 import { retirarDeAhorro } from '../../src/repos/retirar-de-ahorro';
 import type { SavingMovement } from '../../src/domain/types';
 import { parseAmountToCentavos, formatCentavos } from '../../src/domain/money';
@@ -45,11 +45,10 @@ export default function Ahorro() {
   const patrimonioTotal = totalAhorradoActual + patrimonioInversiones(inversiones, brokerCash.centavosArs);
   const movimientosOrdenados = [...movimientos].sort((a, b) => b.fecha.localeCompare(a.fecha));
 
-  // Lo que ya se mandó a ahorro ESTE mes desde el presupuesto (origen 'ingresos'),
-  // para no dejar mandar dos veces el mismo disponible dentro del mismo mes.
-  const enviadoEsteMesDesdePresupuesto =
-    ahorradoHasta(movimientos, mes, 'ingresos') - ahorradoHasta(movimientos, mesAnterior(mes), 'ingresos');
-  const disponibleParaAhorro = resumen.disponible - enviadoEsteMesDesdePresupuesto;
+  // resumen.disponible ya resta lo que se mandó a ahorro este mes (origen
+  // 'ingresos') directamente en su propia fórmula, así que no hace falta
+  // restarlo de nuevo acá — restarlo dos veces bloquearía de más.
+  const disponibleParaAhorro = resumen.disponible;
 
   async function mandarAAhorro() {
     if (enviando) return;

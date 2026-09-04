@@ -1,5 +1,18 @@
 # Gastos con fuente y retiros de ahorro — Design
 
+> **Nota de corrección post-lanzamiento:** la fórmula de `disponible` descripta
+> más abajo (y la que se implementó primero) no restaba los aportes a ahorro
+> del `disponible` del mismo mes en que se mandaban — solo afectaba el
+> arrastre del mes siguiente. Eso era asimétrico con los retiros (que sí suman
+> al `disponible` del mes en que se retiran) y permitía "generar" disponible
+> mandando plata a ahorro y retirándola de vuelta. Se corrigió para que
+> `disponible(mes) = presupuesto + acumuladoPrevio - gastado - mandadoAAhorroEnMes + retiradoADisponibleEnMes`,
+> y el arrastre se simplificó a `acumuladoPrevio(mes) = max(0, disponible(mesAnterior))`
+> (matemáticamente equivalente al arrastre viejo para todo lo que ya estaba
+> testeado — se verificó por inducción — pero ahora también correcto para el
+> disponible del mismo mes). El código en `src/domain/budget.ts` es la fuente
+> de verdad; este documento queda como registro del diseño original.
+
 ## Contexto
 
 Hoy la app tiene tres "bolsillos" de plata que no se comunican entre sí:

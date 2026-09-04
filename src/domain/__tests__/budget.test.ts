@@ -260,6 +260,45 @@ describe('calcularResumenMes', () => {
     expect(resumen.disponible).toBe(100000);
   });
 
+  it('mandar plata a ahorro (origen ingresos) reduce el disponible de ese mismo mes', () => {
+    const presupuestos: Budget[] = [{ mes: '2026-06', totalCentavos: 100000 }];
+    const gastos: Expense[] = [gasto({ centavosArs: 30000, fecha: '2026-06-10' })];
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 'a1', centavosArs: 50000, fecha: '2026-06-15', origen: 'ingresos', destino: null }),
+    ];
+
+    const resumen = calcularResumenMes({ mes: '2026-06', presupuestos, gastos, ahorros });
+
+    // 100000 (presupuesto) - 30000 (gastado) - 50000 (mandado a ahorro este mes)
+    expect(resumen.disponible).toBe(20000);
+  });
+
+  it('un aporte externo mandado a ahorro NO reduce el disponible de ese mismo mes', () => {
+    const presupuestos: Budget[] = [{ mes: '2026-06', totalCentavos: 100000 }];
+    const gastos: Expense[] = [gasto({ centavosArs: 30000, fecha: '2026-06-10' })];
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 'a1', centavosArs: 50000, fecha: '2026-06-15', origen: 'externo', destino: null }),
+    ];
+
+    const resumen = calcularResumenMes({ mes: '2026-06', presupuestos, gastos, ahorros });
+
+    expect(resumen.disponible).toBe(70000);
+  });
+
+  it('mandar a ahorro y retirar el mismo monto a disponible en el mismo mes deja el disponible de ese mes sin cambios (sin generar plata de la nada)', () => {
+    const presupuestos: Budget[] = [{ mes: '2026-06', totalCentavos: 100000 }];
+    const gastos: Expense[] = [gasto({ centavosArs: 30000, fecha: '2026-06-10' })];
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 'a1', centavosArs: 50000, fecha: '2026-06-15', origen: 'ingresos', destino: null }),
+      movimiento({ id: 'r1', centavosArs: -50000, fecha: '2026-06-20', origen: null, destino: 'disponible' }),
+    ];
+
+    const resumen = calcularResumenMes({ mes: '2026-06', presupuestos, gastos, ahorros });
+
+    // el mismo disponible que si nunca hubiera pasado nada: 100000 - 30000 = 70000
+    expect(resumen.disponible).toBe(70000);
+  });
+
   it('un aporte externo mandado a ahorro no reduce el acumuladoPrevio del mes siguiente', () => {
     const presupuestos: Budget[] = [
       { mes: '2026-05', totalCentavos: 50000 },

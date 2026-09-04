@@ -86,10 +86,24 @@ interface ParametrosResumenMes {
   ahorros: SavingMovement[];
 }
 
+/** Suma de los aportes con origen 'ingresos' (salidos del presupuesto) fechados exactamente en `mes`. */
+function mandadoAAhorroEnMes(movimientos: SavingMovement[], mes: MonthKey): number {
+  return ahorradoHasta(movimientos, mes, 'ingresos') - ahorradoHasta(movimientos, mesAnterior(mes), 'ingresos');
+}
+
 /**
  * Calcula, de forma dinámica y sin persistir estado de "cierre de mes":
- *   acumuladoPrevio(mes) = disponible(mesAnterior) - ahorradoEnEseMes
- *   disponible(mes) = presupuestoDelMes + acumuladoPrevio - gastado + retiradoADisponibleEnMes
+ *   disponible(mes) = presupuestoDelMes + acumuladoPrevio - gastado
+ *                      - mandadoAAhorroEnMes + retiradoADisponibleEnMes
+ *   acumuladoPrevio(mes) = max(0, disponible(mesAnterior))
+ *
+ * Mandar plata a ahorro (origen 'ingresos') resta del disponible de ESE mismo
+ * mes, simétrico a como un retiro con destino 'disponible' suma en el mismo
+ * mes en que se retira — si no fuera simétrico, mandar y despues retirar la
+ * misma plata "generaría" disponible de la nada. Como el efecto ya queda
+ * reflejado en el disponible del mes en que ocurre, el arrastre al mes
+ * siguiente es simplemente ese disponible (sin restar mandado de nuevo, para
+ * no contarlo dos veces).
  *
  * Recorre hacia atrás desde `mes` hasta el primer mes que tiene presupuesto
  * cargado, para no arrastrar sobrantes de un pasado sin datos.
@@ -100,6 +114,7 @@ export function calcularResumenMes(params: ParametrosResumenMes): ResumenMes {
   const presupuestoDelMes =
     presupuestos.find((p) => p.mes === mes)?.totalCentavos ?? 0;
   const gastado = gastadoEnMes(gastos, mes);
+  const mandadoAhorro = mandadoAAhorroEnMes(ahorros, mes);
   const retiradoAhorro = retiradoADisponibleEnMes(ahorros, mes);
 
   const mesPrevio = mesAnterior(mes);
@@ -113,20 +128,10 @@ export function calcularResumenMes(params: ParametrosResumenMes): ResumenMes {
       gastos,
       ahorros,
     });
-    const ahorradoHastaPrevio = ahorradoHasta(ahorros, mesPrevio, 'ingresos');
-    const ahorradoHastaAntesDePrevio = ahorradoHasta(ahorros, mesAnterior(mesPrevio), 'ingresos');
-    const mandadoAAhorroEnMesPrevio = ahorradoHastaPrevio - ahorradoHastaAntesDePrevio;
-    acumuladoPrevio = Math.max(
-      0,
-      resumenPrevio.disponible - mandadoAAhorroEnMesPrevio
-    );
+    acumuladoPrevio = Math.max(0, resumenPrevio.disponible);
   }
 
-  // Los retiros de ahorro con destino 'disponible' NO se restan de
-  // mandadoAAhorroEnMesPrevio: ese término solo mira aportes. El efecto del
-  // retiro ya está reflejado acá abajo, en el disponible de este mismo mes.
-  // Restarlo también del arrastre duplicaría el efecto del retiro.
-  const disponible = presupuestoDelMes + acumuladoPrevio - gastado + retiradoAhorro;
+  const disponible = presupuestoDelMes + acumuladoPrevio - gastado - mandadoAhorro + retiradoAhorro;
 
   return { presupuestoDelMes, acumuladoPrevio, gastado, disponible };
 }
