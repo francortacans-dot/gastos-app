@@ -44,8 +44,8 @@ export default function Ahorro() {
       setError('Ingresá un monto válido');
       return;
     }
-    if (origen === 'ingresos' && centavos > resumen.acumuladoPrevio) {
-      setError(`No podés mandar más de ${formatCentavos(resumen.acumuladoPrevio)} (tu acumulado disponible)`);
+    if (origen === 'ingresos' && centavos > resumen.disponible) {
+      setError(`No podés mandar más de ${formatCentavos(resumen.disponible)} (tu disponible de este mes)`);
       return;
     }
     setEnviando(true);
@@ -69,7 +69,7 @@ export default function Ahorro() {
         <View style={estilos.tarjetaTotal}>
           <Text style={estilos.etiqueta}>Total ahorrado</Text>
           <Text style={estilos.montoGrande}>{formatCentavos(totalAhorrado)}</Text>
-          <Text style={estilos.etiqueta}>Disponible para mandar a ahorro: {formatCentavos(resumen.acumuladoPrevio)}</Text>
+          <Text style={estilos.etiqueta}>Disponible para mandar a ahorro: {formatCentavos(resumen.disponible)}</Text>
           <Text style={estilos.etiqueta}>Patrimonio total (ahorro + inversiones)</Text>
           <Text style={estilos.montoGrande}>{formatCentavos(patrimonioTotal)}</Text>
         </View>
