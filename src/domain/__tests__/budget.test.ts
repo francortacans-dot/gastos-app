@@ -24,6 +24,17 @@ function gasto(parcial: Partial<Expense>): Expense {
   };
 }
 
+function movimiento(parcial: Partial<SavingMovement>): SavingMovement {
+  return {
+    id: 'm1',
+    centavosArs: 0,
+    fecha: '2026-06-01',
+    nota: null,
+    origen: 'ingresos',
+    ...parcial,
+  };
+}
+
 describe('mesAnterior / siguienteMes', () => {
   it('retrocede un mes dentro del mismo año', () => {
     expect(mesAnterior('2026-06')).toBe('2026-05');
@@ -81,19 +92,54 @@ describe('gastadoPorSector', () => {
 describe('ahorradoHasta', () => {
   it('suma los movimientos de ahorro hasta el mes inclusive', () => {
     const movimientos: SavingMovement[] = [
-      { id: 'm1', centavosArs: 5000, fecha: '2026-04-15', nota: null },
-      { id: 'm2', centavosArs: 3000, fecha: '2026-06-01', nota: null },
-      { id: 'm3', centavosArs: 1000, fecha: '2026-07-01', nota: null },
+      movimiento({ id: 'm1', centavosArs: 5000, fecha: '2026-04-15' }),
+      movimiento({ id: 'm2', centavosArs: 3000, fecha: '2026-06-01' }),
+      movimiento({ id: 'm3', centavosArs: 1000, fecha: '2026-07-01' }),
     ];
     expect(ahorradoHasta(movimientos, '2026-06')).toBe(8000);
   });
 
   it('resta los retiros de ahorro (montos negativos)', () => {
     const movimientos: SavingMovement[] = [
-      { id: 'm1', centavosArs: 5000, fecha: '2026-04-15', nota: null },
-      { id: 'm2', centavosArs: -2000, fecha: '2026-05-01', nota: null },
+      movimiento({ id: 'm1', centavosArs: 5000, fecha: '2026-04-15' }),
+      movimiento({ id: 'm2', centavosArs: -2000, fecha: '2026-05-01' }),
     ];
     expect(ahorradoHasta(movimientos, '2026-06')).toBe(3000);
+  });
+});
+
+describe('ahorradoHasta con filtro de origen', () => {
+  it('filtra solo los movimientos "ingresos" cuando se pide ese origen', () => {
+    const movimientos: SavingMovement[] = [
+      movimiento({ id: 'm1', centavosArs: 5000, fecha: '2026-06-01', origen: 'ingresos' }),
+      movimiento({ id: 'm2', centavosArs: 2000, fecha: '2026-06-02', origen: 'externo' }),
+    ];
+    expect(ahorradoHasta(movimientos, '2026-06', 'ingresos')).toBe(5000);
+  });
+
+  it('filtra solo los movimientos "externo" cuando se pide ese origen', () => {
+    const movimientos: SavingMovement[] = [
+      movimiento({ id: 'm1', centavosArs: 5000, fecha: '2026-06-01', origen: 'ingresos' }),
+      movimiento({ id: 'm2', centavosArs: 2000, fecha: '2026-06-02', origen: 'externo' }),
+    ];
+    expect(ahorradoHasta(movimientos, '2026-06', 'externo')).toBe(2000);
+  });
+
+  it('sin filtro de origen, suma todos los movimientos sin importar el origen', () => {
+    const movimientos: SavingMovement[] = [
+      movimiento({ id: 'm1', centavosArs: 5000, fecha: '2026-06-01', origen: 'ingresos' }),
+      movimiento({ id: 'm2', centavosArs: 2000, fecha: '2026-06-02', origen: 'externo' }),
+    ];
+    expect(ahorradoHasta(movimientos, '2026-06')).toBe(7000);
+  });
+
+  it('trata los movimientos históricos sin campo origen guardado como "ingresos"', () => {
+    // simula un doc viejo de Firestore, guardado antes de que existiera el campo `origen`
+    const movimientos = [
+      { id: 'm1', centavosArs: 4000, fecha: '2026-06-01', nota: null },
+    ] as SavingMovement[];
+    expect(ahorradoHasta(movimientos, '2026-06', 'ingresos')).toBe(4000);
+    expect(ahorradoHasta(movimientos, '2026-06', 'externo')).toBe(0);
   });
 });
 
@@ -144,7 +190,7 @@ describe('calcularResumenMes', () => {
     ];
     const gastos: Expense[] = [gasto({ id: 'may', centavosArs: 20000, fecha: '2026-05-10' })];
     // el sobrante de mayo (30000) se manda entero a ahorro
-    const ahorros: SavingMovement[] = [{ id: 's1', centavosArs: 30000, fecha: '2026-05-28', nota: null }];
+    const ahorros: SavingMovement[] = [movimiento({ id: 's1', centavosArs: 30000, fecha: '2026-05-28', origen: 'ingresos' })];
 
     const resumen = calcularResumenMes({
       mes: '2026-06',
@@ -155,6 +201,29 @@ describe('calcularResumenMes', () => {
 
     expect(resumen.acumuladoPrevio).toBe(0);
     expect(resumen.disponible).toBe(100000);
+  });
+
+  it('un aporte externo mandado a ahorro no reduce el acumuladoPrevio del mes siguiente', () => {
+    const presupuestos: Budget[] = [
+      { mes: '2026-05', totalCentavos: 50000 },
+      { mes: '2026-06', totalCentavos: 100000 },
+    ];
+    // en mayo se gastaron 20000 de 50000: sobran 30000 que deberían arrastrar a junio
+    const gastos: Expense[] = [gasto({ id: 'may', centavosArs: 20000, fecha: '2026-05-10' })];
+    // aporte externo (ej. regalo) mandado en mayo: nunca salió del presupuesto, no debe descontar el arrastre
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 's1', centavosArs: 15000, fecha: '2026-05-28', origen: 'externo' }),
+    ];
+
+    const resumen = calcularResumenMes({
+      mes: '2026-06',
+      presupuestos,
+      gastos,
+      ahorros,
+    });
+
+    expect(resumen.acumuladoPrevio).toBe(30000);
+    expect(resumen.disponible).toBe(100000 + 30000);
   });
 
   it('un mes sin presupuesto definido cuenta como presupuesto 0', () => {

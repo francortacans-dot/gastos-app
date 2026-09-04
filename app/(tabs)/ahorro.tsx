@@ -29,6 +29,7 @@ export default function Ahorro() {
   const [montoTexto, setMontoTexto] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [origen, setOrigen] = useState<'ingresos' | 'externo'>('ingresos');
 
   const totalAhorrado = movimientos.reduce((acc, m) => acc + m.centavosArs, 0);
   const inversiones = useInversiones();
@@ -43,7 +44,7 @@ export default function Ahorro() {
       setError('Ingresá un monto válido');
       return;
     }
-    if (centavos > resumen.acumuladoPrevio) {
+    if (origen === 'ingresos' && centavos > resumen.acumuladoPrevio) {
       setError(`No podés mandar más de ${formatCentavos(resumen.acumuladoPrevio)} (tu acumulado disponible)`);
       return;
     }
@@ -53,6 +54,7 @@ export default function Ahorro() {
         centavosArs: centavos,
         fecha: new Date().toISOString().slice(0, 10),
         nota: null,
+        origen,
       });
       setMontoTexto('');
       setError(null);
@@ -105,6 +107,24 @@ export default function Ahorro() {
 
         <Text style={estilos.tituloSeccion}>Mandar a ahorro general</Text>
         <View style={estilos.formulario}>
+          <View style={estilos.filaChips}>
+            <Pressable
+              onPress={() => setOrigen('ingresos')}
+              style={[estilos.chip, origen === 'ingresos' && estilos.chipActivo]}
+            >
+              <Text style={[estilos.textoChip, origen === 'ingresos' && estilos.textoChipActivo]}>
+                De mi presupuesto
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setOrigen('externo')}
+              style={[estilos.chip, origen === 'externo' && estilos.chipActivo]}
+            >
+              <Text style={[estilos.textoChip, origen === 'externo' && estilos.textoChipActivo]}>
+                Aporte externo
+              </Text>
+            </Pressable>
+          </View>
           <TextInput
             value={montoTexto}
             onChangeText={(t) => {
@@ -127,7 +147,12 @@ export default function Ahorro() {
           scrollEnabled={false}
           renderItem={({ item }) => (
             <View style={estilos.filaMovimiento}>
-              <Text style={estilos.fechaMovimiento}>{item.fecha}</Text>
+              <View>
+                <Text style={estilos.fechaMovimiento}>{item.fecha}</Text>
+                <Text style={estilos.etiquetaOrigen}>
+                  {(item.origen ?? 'ingresos') === 'ingresos' ? 'De presupuesto' : 'Aporte externo'}
+                </Text>
+              </View>
               <Text style={estilos.montoMovimiento}>{formatCentavos(item.centavosArs)}</Text>
             </View>
           )}
@@ -164,12 +189,18 @@ function crearEstilos(colors: Colors) {
     porcentajeObjetivo: { color: colors.primaryDark, fontWeight: '700', fontSize: 13 },
     fechaObjetivo: { color: colors.text3, fontSize: 11, marginTop: 2 },
     formulario: { marginBottom: spacing.md },
+    filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
+    chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+    chipActivo: { backgroundColor: colors.primary, borderColor: colors.primary },
+    textoChip: { color: colors.text2 },
+    textoChipActivo: { color: colors.onPrimary },
     input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.sm, backgroundColor: colors.surface },
     boton: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
     botonDeshabilitado: { opacity: 0.6 },
     textoBoton: { color: colors.onPrimary, fontWeight: '700' },
     filaMovimiento: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.xs },
     fechaMovimiento: { color: colors.text3 },
+    etiquetaOrigen: { color: colors.text3, fontSize: 11, marginTop: 2 },
     montoMovimiento: { color: colors.primaryDark, fontWeight: '700' },
     botonFlotante: {
       position: 'absolute',

@@ -49,6 +49,17 @@ export interface SavingMovement {
   /** Fecha ISO 'YYYY-MM-DD'. */
   fecha: string;
   nota: string | null;
+  /**
+   * De dónde sale la plata que se manda a ahorro:
+   * - 'ingresos': salió del presupuesto mensual (comportamiento histórico). Tiene tope
+   *   igual al `acumuladoPrevio` y descuenta ese monto del acumulado que se arrastra
+   *   al mes siguiente.
+   * - 'externo': aporte que nunca pasó por el presupuesto (regalo, aguinaldo, etc.).
+   *   No tiene tope y no descuenta nada del acumulado arrastrado.
+   * Movimientos históricos guardados antes de este campo no lo tienen: se deben
+   * tratar como 'ingresos' en todo cálculo y en la UI.
+   */
+  origen: 'ingresos' | 'externo';
 }
 
 export interface Investment {
