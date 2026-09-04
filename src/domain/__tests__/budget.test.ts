@@ -299,6 +299,41 @@ describe('calcularResumenMes', () => {
     expect(resumen.disponible).toBe(70000);
   });
 
+  it('un aporte a ahorro se descuenta del disponible de ese mes y NO se descuenta de nuevo en el arrastre (pin de la fórmula, evita doble resta)', () => {
+    const presupuestos: Budget[] = [
+      { mes: '2026-05', totalCentavos: 100000 },
+      { mes: '2026-06', totalCentavos: 0 },
+    ];
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 'a1', centavosArs: 50000, fecha: '2026-05-15', origen: 'ingresos', destino: null }),
+    ];
+
+    const resumenMayo = calcularResumenMes({ mes: '2026-05', presupuestos, gastos: [], ahorros });
+    const resumenJunio = calcularResumenMes({ mes: '2026-06', presupuestos, gastos: [], ahorros });
+
+    // el aporte se resta UNA vez, en el disponible de mayo...
+    expect(resumenMayo.disponible).toBe(50000);
+    // ...y el arrastre a junio es exactamente ese disponible: si se restara
+    // de nuevo en el arrastre, esto daría 0 en vez de 50000.
+    expect(resumenJunio.acumuladoPrevio).toBe(50000);
+  });
+
+  it('un retiro a disponible en el mes siguiente al del aporte se suma una sola vez', () => {
+    const presupuestos: Budget[] = [
+      { mes: '2026-05', totalCentavos: 100000 },
+      { mes: '2026-06', totalCentavos: 0 },
+    ];
+    const ahorros: SavingMovement[] = [
+      movimiento({ id: 'a1', centavosArs: 50000, fecha: '2026-05-15', origen: 'ingresos', destino: null }),
+      movimiento({ id: 'r1', centavosArs: -50000, fecha: '2026-06-05', origen: null, destino: 'disponible' }),
+    ];
+
+    const resumenJunio = calcularResumenMes({ mes: '2026-06', presupuestos, gastos: [], ahorros });
+
+    // arrastre de mayo (50000, ya descontado el aporte) + el retiro de junio (50000)
+    expect(resumenJunio.disponible).toBe(100000);
+  });
+
   it('un aporte externo mandado a ahorro no reduce el acumuladoPrevio del mes siguiente', () => {
     const presupuestos: Budget[] = [
       { mes: '2026-05', totalCentavos: 50000 },

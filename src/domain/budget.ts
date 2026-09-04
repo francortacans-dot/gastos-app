@@ -99,7 +99,7 @@ function mandadoAAhorroEnMes(movimientos: SavingMovement[], mes: MonthKey): numb
  *
  * Mandar plata a ahorro (origen 'ingresos') resta del disponible de ESE mismo
  * mes, simétrico a como un retiro con destino 'disponible' suma en el mismo
- * mes en que se retira — si no fuera simétrico, mandar y despues retirar la
+ * mes en que se retira — si no fuera simétrico, mandar y después retirar la
  * misma plata "generaría" disponible de la nada. Como el efecto ya queda
  * reflejado en el disponible del mes en que ocurre, el arrastre al mes
  * siguiente es simplemente ese disponible (sin restar mandado de nuevo, para
