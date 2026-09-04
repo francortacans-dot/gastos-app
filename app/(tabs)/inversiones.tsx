@@ -18,6 +18,9 @@ import { spacing } from '../../src/theme/spacing';
 import type { Investment, InvestmentSale } from '../../src/domain/types';
 import { generarCsvPortfolio } from '../../src/domain/export-csv';
 import { compartirCsv } from '../../src/services/compartir-csv';
+import { parsearCsvInversiones } from '../../src/domain/import-csv-inversiones';
+import { seleccionarArchivoCsv } from '../../src/services/importar-csv';
+import { importarInversiones } from '../../src/repos/importar-inversiones';
 
 export default function Inversiones() {
   const router = useRouter();
@@ -40,6 +43,7 @@ export default function Inversiones() {
   const [cashTexto, setCashTexto] = useState('');
   const [monedaEdicion, setMonedaEdicion] = useState<'ARS' | 'USD'>('ARS');
   const [error, setError] = useState<string | null>(null);
+  const [importando, setImportando] = useState(false);
 
   const abiertas = inversiones.filter((i) => i.status === 'OPEN').sort((a, b) => b.fecha.localeCompare(a.fecha));
   const costoAbierto = costoTotalAbierto(inversiones);
@@ -98,6 +102,41 @@ export default function Inversiones() {
     }
   }
 
+  async function importarCsv() {
+    if (importando) return;
+    setError(null);
+    setImportando(true);
+    try {
+      const texto = await seleccionarArchivoCsv();
+      if (texto === null) return;
+
+      const fechaHoy = new Date().toISOString().slice(0, 10);
+      const { posiciones, errores: erroresParseo } = parsearCsvInversiones(texto, fechaHoy);
+
+      if (posiciones.length === 0 && erroresParseo.length > 0) {
+        setError(`No se pudo importar: ${erroresParseo[0].motivo}`);
+        return;
+      }
+
+      const { creadas, errores: erroresImportacion } = await importarInversiones(
+        repos,
+        posiciones,
+        cotizacion?.venta ?? null
+      );
+
+      const totalErrores = erroresParseo.length + erroresImportacion.length;
+      if (totalErrores === 0) {
+        setError(null);
+      } else {
+        setError(`${creadas.length} posiciones importadas, ${totalErrores} con errores (fila ${erroresParseo[0]?.fila ?? '?'}: revisá el CSV)`);
+      }
+    } catch {
+      setError('No se pudo importar el CSV. Probá de nuevo.');
+    } finally {
+      setImportando(false);
+    }
+  }
+
   function renderPosicion({ item }: { item: Investment }) {
     return (
       <View style={estilos.filaPosicion}>
@@ -143,6 +182,9 @@ export default function Inversiones() {
             <View style={estilos.filaMoneda}>
               <Pressable onPress={exportar} style={estilos.botonExportar}>
                 <Text style={estilos.textoExportar}>Exportar</Text>
+              </Pressable>
+              <Pressable onPress={importarCsv} style={estilos.botonExportar} disabled={importando}>
+                <Text style={estilos.textoExportar}>{importando ? 'Importando...' : 'Importar CSV'}</Text>
               </Pressable>
               <View style={estilos.grupoChip}>
                 {(['ARS', 'USD'] as const).map((m) => (
