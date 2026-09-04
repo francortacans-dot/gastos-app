@@ -19,9 +19,13 @@ function mesDeFecha(fechaIso: string): MonthKey {
   return fechaIso.slice(0, 7);
 }
 
+function fuenteEfectiva(g: Expense): 'disponible' | 'ahorro' {
+  return g.fuente ?? 'disponible';
+}
+
 export function gastadoEnMes(gastos: Expense[], mes: MonthKey): number {
   return gastos
-    .filter((g) => mesDeFecha(g.fecha) === mes)
+    .filter((g) => mesDeFecha(g.fecha) === mes && fuenteEfectiva(g) === 'disponible')
     .reduce((acc, g) => acc + g.centavosArs, 0);
 }
 
@@ -40,6 +44,11 @@ function origenEfectivo(m: SavingMovement): 'ingresos' | 'externo' {
   return m.origen ?? 'ingresos';
 }
 
+/**
+ * origen filtra SOLO aportes (centavosArs > 0) — un retiro nunca matchea un
+ * filtro de origen, sin importar qué tenga guardado en `origen` (no aplica a
+ * retiros). Sin filtro de origen, suma todo (aportes y retiros), como antes.
+ */
 export function ahorradoHasta(
   movimientos: SavingMovement[],
   mes: MonthKey,
@@ -47,8 +56,20 @@ export function ahorradoHasta(
 ): number {
   return movimientos
     .filter((m) => mesDeFecha(m.fecha) <= mes)
-    .filter((m) => origen === undefined || origenEfectivo(m) === origen)
+    .filter((m) => origen === undefined || (m.centavosArs > 0 && origenEfectivo(m) === origen))
     .reduce((acc, m) => acc + m.centavosArs, 0);
+}
+
+/** Suma de los retiros con destino 'disponible' fechados exactamente en `mes`. */
+export function retiradoADisponibleEnMes(movimientos: SavingMovement[], mes: MonthKey): number {
+  return movimientos
+    .filter((m) => m.centavosArs < 0 && m.destino === 'disponible' && mesDeFecha(m.fecha) === mes)
+    .reduce((acc, m) => acc + Math.abs(m.centavosArs), 0);
+}
+
+/** Saldo total de ahorro: suma de todos los movimientos, sin filtrar por mes. */
+export function totalAhorrado(movimientos: SavingMovement[]): number {
+  return movimientos.reduce((acc, m) => acc + m.centavosArs, 0);
 }
 
 export interface ResumenMes {
@@ -79,6 +100,7 @@ export function calcularResumenMes(params: ParametrosResumenMes): ResumenMes {
   const presupuestoDelMes =
     presupuestos.find((p) => p.mes === mes)?.totalCentavos ?? 0;
   const gastado = gastadoEnMes(gastos, mes);
+  const retiradoAhorro = retiradoADisponibleEnMes(ahorros, mes);
 
   const mesPrevio = mesAnterior(mes);
   const huboPresupuestoPrevio = presupuestos.some((p) => p.mes === mesPrevio);
@@ -100,7 +122,11 @@ export function calcularResumenMes(params: ParametrosResumenMes): ResumenMes {
     );
   }
 
-  const disponible = presupuestoDelMes + acumuladoPrevio - gastado;
+  // Los retiros de ahorro con destino 'disponible' NO se restan de
+  // mandadoAAhorroEnMesPrevio: ese término solo mira aportes. El efecto del
+  // retiro ya está reflejado acá abajo, en el disponible de este mismo mes.
+  // Restarlo también del arrastre duplicaría el efecto del retiro.
+  const disponible = presupuestoDelMes + acumuladoPrevio - gastado + retiradoAhorro;
 
   return { presupuestoDelMes, acumuladoPrevio, gastado, disponible };
 }
