@@ -47,6 +47,7 @@ function gastoParcial(): Omit<Expense, 'id'> {
     lugar: null,
     descripcion: null,
     metodoPago: null,
+    fuente: 'disponible',
   };
 }
 
