@@ -35,9 +35,19 @@ export function gastadoPorSector(gastos: Expense[], mes: MonthKey): Map<string, 
   return resultado;
 }
 
-export function ahorradoHasta(movimientos: SavingMovement[], mes: MonthKey): number {
+/** Movimientos históricos guardados antes de existir el campo `origen` cuentan como 'ingresos'. */
+function origenEfectivo(m: SavingMovement): 'ingresos' | 'externo' {
+  return m.origen ?? 'ingresos';
+}
+
+export function ahorradoHasta(
+  movimientos: SavingMovement[],
+  mes: MonthKey,
+  origen?: 'ingresos' | 'externo'
+): number {
   return movimientos
     .filter((m) => mesDeFecha(m.fecha) <= mes)
+    .filter((m) => origen === undefined || origenEfectivo(m) === origen)
     .reduce((acc, m) => acc + m.centavosArs, 0);
 }
 
@@ -81,8 +91,8 @@ export function calcularResumenMes(params: ParametrosResumenMes): ResumenMes {
       gastos,
       ahorros,
     });
-    const ahorradoHastaPrevio = ahorradoHasta(ahorros, mesPrevio);
-    const ahorradoHastaAntesDePrevio = ahorradoHasta(ahorros, mesAnterior(mesPrevio));
+    const ahorradoHastaPrevio = ahorradoHasta(ahorros, mesPrevio, 'ingresos');
+    const ahorradoHastaAntesDePrevio = ahorradoHasta(ahorros, mesAnterior(mesPrevio), 'ingresos');
     const mandadoAAhorroEnMesPrevio = ahorradoHastaPrevio - ahorradoHastaAntesDePrevio;
     acumuladoPrevio = Math.max(
       0,
