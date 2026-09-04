@@ -6,8 +6,9 @@ import { useRouter } from 'expo-router';
 import { useApp } from '../../src/app-context';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
-import { useSectores, useObjetivos } from '../../src/hooks/use-datos';
+import { useSectores, useObjetivos, useAhorros } from '../../src/hooks/use-datos';
 import { useGastos } from '../../src/hooks/use-datos';
+import { eliminarGasto } from '../../src/repos/eliminar-gasto';
 import { useCotizacionActual } from '../../src/hooks/use-cotizacion-actual';
 import { usePreferences } from '../../src/preferences/use-preferences';
 import { gastadoPorSector, SIN_SECTOR } from '../../src/domain/budget';
@@ -30,6 +31,7 @@ export default function Home() {
   const sectores = useSectores();
   const objetivos = useObjetivos();
   const gastos = useGastos();
+  const movimientos = useAhorros();
   const preferencias = usePreferences();
   const cotizacion = useCotizacionActual(preferencias.cotizacionPreferida);
   const esEscritorio = useEsEscritorio();
@@ -208,7 +210,7 @@ export default function Home() {
                     <Text style={estilos.fechaGasto}>{g.fecha}</Text>
                   </View>
                   <Text style={estilos.montoGastoFila}>{formatCentavos(g.centavosArs)}</Text>
-                  <Pressable onPress={() => repos.expenses.eliminar(g.id)} hitSlop={8} style={estilos.botonBorrarGasto}>
+                  <Pressable onPress={() => eliminarGasto(repos, g, movimientos)} hitSlop={8} style={estilos.botonBorrarGasto}>
                     <IconTrash color={colors.text4} size={16} />
                   </Pressable>
                 </View>

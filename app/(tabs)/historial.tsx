@@ -4,7 +4,8 @@ import { PantallaAnimada } from '../../src/components/pantalla-animada';
 import { useApp } from '../../src/app-context';
 import { useMesActual } from '../../src/hooks/use-mes-actual';
 import { useResumenMes } from '../../src/hooks/use-resumen-mes';
-import { useSectores, useGastos } from '../../src/hooks/use-datos';
+import { useSectores, useGastos, useAhorros } from '../../src/hooks/use-datos';
+import { eliminarGasto } from '../../src/repos/eliminar-gasto';
 import { gastadoPorSector, gastadoEnMes, mesAnterior } from '../../src/domain/budget';
 import { PieChart } from '../../src/components/pie-chart';
 import { BarChart, type BarraDato } from '../../src/components/bar-chart';
@@ -28,6 +29,7 @@ export default function Historial() {
   const resumen = useResumenMes(mes);
   const sectores = useSectores();
   const gastos = useGastos();
+  const movimientos = useAhorros();
   const colors = useColors();
   const estilos = useMemo(() => crearEstilos(colors), [colors]);
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
@@ -100,7 +102,7 @@ export default function Historial() {
               <Text style={estilos.fechaGasto}>{item.fecha}</Text>
             </View>
             <Text style={estilos.montoGasto}>{formatCentavos(item.centavosArs)}</Text>
-            <Pressable onPress={() => repos.expenses.eliminar(item.id)} hitSlop={8} style={estilos.botonBorrar}>
+            <Pressable onPress={() => eliminarGasto(repos, item, movimientos)} hitSlop={8} style={estilos.botonBorrar}>
               <IconTrash color={colors.text4} size={16} />
             </Pressable>
           </View>
