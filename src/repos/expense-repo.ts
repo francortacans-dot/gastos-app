@@ -13,6 +13,7 @@ interface DepsExpenseRepo {
 export interface ExpenseRepo {
   listar(): Promise<Expense[]>;
   agregar(gasto: Omit<Expense, 'id'>): Promise<Expense>;
+  guardar(gasto: Expense): Promise<Expense>;
   eliminar(id: string): Promise<void>;
   /** Se suscribe a cambios en tiempo real (solo tiene efecto real si hay red). Devuelve función para desuscribirse. */
   suscribir(cb: (gastos: Expense[]) => void): () => void;
@@ -55,6 +56,26 @@ export function crearExpenseRepo(deps: DepsExpenseRepo): ExpenseRepo {
         await setDoc(doc(db, 'users', uid, COLECCION, gasto.id), gasto).catch(() => {
           // si falla, la cola de sincronización (Task 6) la reintenta después
         });
+      }
+
+      return gasto;
+    },
+
+    async guardar(gasto: Expense): Promise<Expense> {
+      const actuales = await leerLocal();
+      const yaExiste = actuales.some((g) => g.id === gasto.id);
+      await escribirLocal(yaExiste ? actuales.map((g) => (g.id === gasto.id ? gasto : g)) : [...actuales, gasto]);
+
+      await localStore.guardarPendiente({
+        id: gasto.id,
+        coleccion: COLECCION,
+        operacion: 'set',
+        datos: gasto as unknown as Record<string, unknown>,
+        creadoEn: Date.now(),
+      });
+
+      if (estaOnline()) {
+        await setDoc(doc(db, 'users', uid, COLECCION, gasto.id), gasto).catch(() => {});
       }
 
       return gasto;

@@ -102,4 +102,40 @@ describe('crearExpenseRepo sin conexión', () => {
     expect(lista).toHaveLength(0);
     expect(store.pendientes.some((p) => p.operacion === 'delete' && p.id === gasto.id)).toBe(true);
   });
+
+  it('guardar() reemplaza un gasto existente y listar() lo refleja', async () => {
+    const store = crearStoreFake();
+    const repo = crearExpenseRepo({
+      db: null as any,
+      uid: 'u1',
+      localStore: store,
+      estaOnline: () => false,
+    });
+
+    const gasto = await repo.agregar(gastoParcial());
+    const actualizado = await repo.guardar({ ...gasto, centavosArs: 9000, descripcion: 'Actualizado' });
+
+    expect(actualizado.centavosArs).toBe(9000);
+    const lista = await repo.listar();
+    expect(lista).toHaveLength(1);
+    expect(lista[0].descripcion).toBe('Actualizado');
+  });
+
+  it('guardar() con un id que no está en el store local igual lo agrega (no depende de leer el estado previo)', async () => {
+    const store = crearStoreFake();
+    const repo = crearExpenseRepo({
+      db: null as any,
+      uid: 'u1',
+      localStore: store,
+      estaOnline: () => false,
+    });
+
+    const gasto: Expense = { ...gastoParcial(), id: 'externo-1' };
+    const guardado = await repo.guardar(gasto);
+
+    expect(guardado.id).toBe('externo-1');
+    const lista = await repo.listar();
+    expect(lista).toHaveLength(1);
+    expect(lista[0].id).toBe('externo-1');
+  });
 });
