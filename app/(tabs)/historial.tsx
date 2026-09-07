@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, FlatList, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { PantallaAnimada } from '../../src/components/pantalla-animada';
 import { Toast } from '../../src/components/toast';
 import { useApp } from '../../src/app-context';
@@ -25,6 +26,7 @@ function etiquetaCortaDeMes(mesClave: string): string {
 }
 
 export default function Historial() {
+  const router = useRouter();
   const { repos } = useApp();
   const { mes, irAMes } = useMesActual();
   const resumen = useResumenMes(mes);
@@ -110,13 +112,13 @@ export default function Historial() {
         scrollEnabled={false}
         renderItem={({ item }) => (
           <View style={estilos.filaGasto}>
-            <View style={estilos.infoGasto}>
+            <Pressable style={estilos.infoGasto} onPress={() => router.push(`/gasto-nuevo?id=${item.id}`)}>
               <Text style={estilos.descripcionGasto}>{item.descripcion ?? item.lugar ?? 'Gasto sin descripción'}</Text>
               <Text style={estilos.fechaGasto}>{item.fecha}</Text>
               {(item.fuente ?? 'disponible') === 'ahorro' && (
                 <Text style={estilos.etiquetaAhorro}>Pagado con ahorro</Text>
               )}
-            </View>
+            </Pressable>
             <Text style={estilos.montoGasto}>{formatCentavos(item.centavosArs)}</Text>
             <Pressable onPress={() => borrarGasto(item)} hitSlop={8} style={estilos.botonBorrar}>
               <IconTrash color={colors.text4} size={16} />

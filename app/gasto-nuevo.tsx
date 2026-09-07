@@ -3,12 +3,14 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { TextInputTema as TextInput } from '../src/components/text-input-tema';
 import { Toast } from '../src/components/toast';
 import { BottomSheet } from '../src/components/bottom-sheet';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useApp } from '../src/app-context';
-import { useSectores, useAhorros } from '../src/hooks/use-datos';
+import { useGastos, useSectores, useAhorros } from '../src/hooks/use-datos';
 import { parseAmountToCentavos, formatCentavos } from '../src/domain/money';
 import { totalAhorrado } from '../src/domain/budget';
 import { pagarGasto } from '../src/repos/pagar-gasto';
+import { editarGasto } from '../src/repos/editar-gasto';
+import { eliminarGasto } from '../src/repos/eliminar-gasto';
 import { useColors } from '../src/theme/theme-context';
 import type { Colors } from '../src/theme/palettes';
 import { spacing } from '../src/theme/spacing';
@@ -28,18 +30,29 @@ export default function GastoNuevo() {
   const router = useRouter();
   const { repos } = useApp();
   const sectores = useSectores();
+  const gastos = useGastos();
   const movimientos = useAhorros();
   const colors = useColors();
   const estilos = useMemo(() => crearEstilos(colors), [colors]);
 
-  const [montoTexto, setMontoTexto] = useState('');
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const gastoExistente = id ? gastos.find((g) => g.id === id) ?? null : null;
+  const editando = gastoExistente !== null;
+
+  const [montoTexto, setMontoTexto] = useState(
+    gastoExistente ? String(gastoExistente.centavosArs / 100).replace('.', ',') : ''
+  );
   const [error, setError] = useState<string | null>(null);
-  const [sectorId, setSectorId] = useState<string | null>(null);
-  const [lugar, setLugar] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [metodoPago, setMetodoPago] = useState<string | null>(null);
-  const [metodoPersonalizado, setMetodoPersonalizado] = useState('');
-  const [fuente, setFuente] = useState<'disponible' | 'ahorro'>('disponible');
+  const [sectorId, setSectorId] = useState<string | null>(gastoExistente?.sectorId ?? null);
+  const [lugar, setLugar] = useState(gastoExistente?.lugar ?? '');
+  const [descripcion, setDescripcion] = useState(gastoExistente?.descripcion ?? '');
+  const [metodoPago, setMetodoPago] = useState<string | null>(
+    gastoExistente?.metodoPago && METODOS_SUGERIDOS.includes(gastoExistente.metodoPago) ? gastoExistente.metodoPago : null
+  );
+  const [metodoPersonalizado, setMetodoPersonalizado] = useState(
+    gastoExistente?.metodoPago && !METODOS_SUGERIDOS.includes(gastoExistente.metodoPago) ? gastoExistente.metodoPago : ''
+  );
+  const [fuente, setFuente] = useState<'disponible' | 'ahorro'>(gastoExistente?.fuente ?? 'disponible');
   const [guardando, setGuardando] = useState(false);
 
   async function guardar() {
@@ -51,22 +64,24 @@ export default function GastoNuevo() {
 
     setGuardando(true);
     try {
-      await pagarGasto(
-        repos,
-        {
-          centavosArs: centavos,
-          montoOriginal: centavos / 100,
-          monedaOriginal: 'ARS',
-          cotizacionUsada: null,
-          fecha: new Date().toISOString().slice(0, 10),
-          sectorId,
-          lugar: lugar.trim() || null,
-          descripcion: descripcion.trim() || null,
-          metodoPago: metodoPersonalizado.trim() || metodoPago,
-          fuente,
-        },
-        movimientos
-      );
+      const datosGasto = {
+        centavosArs: centavos,
+        montoOriginal: centavos / 100,
+        monedaOriginal: 'ARS' as const,
+        cotizacionUsada: null,
+        fecha: gastoExistente?.fecha ?? new Date().toISOString().slice(0, 10),
+        sectorId,
+        lugar: lugar.trim() || null,
+        descripcion: descripcion.trim() || null,
+        metodoPago: metodoPersonalizado.trim() || metodoPago,
+        fuente,
+      };
+
+      if (gastoExistente) {
+        await editarGasto(repos, { ...datosGasto, id: gastoExistente.id }, movimientos);
+      } else {
+        await pagarGasto(repos, datosGasto, movimientos);
+      }
       router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar el gasto');
@@ -75,8 +90,18 @@ export default function GastoNuevo() {
     }
   }
 
+  async function borrar() {
+    if (!gastoExistente) return;
+    try {
+      await eliminarGasto(repos, gastoExistente, movimientos);
+      router.back();
+    } catch {
+      setError('No se pudo borrar el gasto. Probá de nuevo.');
+    }
+  }
+
   return (
-    <BottomSheet titulo="Nuevo gasto" onCerrar={() => router.back()}>
+    <BottomSheet titulo={editando ? 'Editar gasto' : 'Nuevo gasto'} onCerrar={() => router.back()}>
       <TextInput
         value={montoTexto}
         onChangeText={(t) => {
@@ -162,8 +187,14 @@ export default function GastoNuevo() {
       </View>
 
       <Pressable style={estilos.botonGuardar} onPress={guardar} disabled={guardando}>
-        <Text style={estilos.textoBotonGuardar}>{guardando ? 'Guardando...' : 'Guardar gasto'}</Text>
+        <Text style={estilos.textoBotonGuardar}>{guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Guardar gasto'}</Text>
       </Pressable>
+
+      {editando && (
+        <Pressable style={estilos.botonBorrar} onPress={borrar}>
+          <Text style={estilos.textoBotonBorrar}>Borrar gasto</Text>
+        </Pressable>
+      )}
     </BottomSheet>
   );
 }
@@ -180,5 +211,7 @@ function crearEstilos(colors: Colors) {
     inputTexto: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.surface },
     botonGuardar: { backgroundColor: colors.primary, borderRadius: 8, padding: spacing.md, alignItems: 'center' },
     textoBotonGuardar: { color: colors.onPrimary, fontWeight: '700', fontSize: 16 },
+    botonBorrar: { alignItems: 'center', padding: spacing.md },
+    textoBotonBorrar: { color: colors.red, fontWeight: '600' },
   });
 }
