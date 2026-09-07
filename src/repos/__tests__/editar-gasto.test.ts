@@ -126,13 +126,16 @@ describe('editarGasto', () => {
 
   it('rechaza si el nuevo monto con fuente ahorro supera el saldo disponible tras liberar el retiro viejo', async () => {
     // totalAhorrado([-5000, 10000]) = 5000. saldoBase = 5000 + 5000 = 10000. Pide 20000: rechaza.
-    const { repos, gastosGuardados } = crearReposFake();
+    // El retiro viejo SÍ se borra antes de validar (orden intencional del brief),
+    // así que el rechazo no revierte ese borrado — se deja explícito acá.
+    const { repos, gastosGuardados, idsMovimientosEliminados } = crearReposFake();
     const gasto = crearGasto({ id: 'g1', centavosArs: 20000, fuente: 'ahorro' });
     const movimientoViejo = crearMovimiento({ id: 'm1', gastoId: 'g1', centavosArs: -5000 });
     const movimientos = [movimientoViejo, crearMovimiento({ id: 'base', gastoId: null, destino: null, origen: 'ingresos', centavosArs: 10000 })];
 
     await expect(editarGasto(repos, gasto, movimientos)).rejects.toThrow();
     expect(gastosGuardados).toHaveLength(0);
+    expect(idsMovimientosEliminados).toEqual(['m1']);
   });
 
   it('rechaza un gasto con centavosArs <= 0, sin guardar nada', async () => {
