@@ -7,6 +7,10 @@ import {
   calcularResumenMes,
   mesAnterior,
   siguienteMes,
+  gastadoPorSectorEnAnio,
+  mandadoAAhorroEnAnio,
+  tablaSectorPorMes,
+  mandadoAAhorroEnMes,
 } from '../budget';
 import type { Expense, Budget, SavingMovement } from '../types';
 
@@ -479,5 +483,74 @@ describe('calcularResumenMes', () => {
 
     // el propio mes SÍ refleja el rojo: acá no hay Math.max de por medio
     expect(resumenMayo.disponible).toBe(-30000);
+  });
+});
+
+describe('gastadoPorSectorEnAnio', () => {
+  it('suma el gasto de cada sector a lo largo de los 12 meses del año, ignorando otros años', () => {
+    const gastos = [
+      gasto({ id: 'a', centavosArs: 1000, sectorId: 'ocio', fecha: '2026-01-05' }),
+      gasto({ id: 'b', centavosArs: 500, sectorId: 'ocio', fecha: '2026-11-06' }),
+      gasto({ id: 'c', centavosArs: 2000, sectorId: 'vacaciones', fecha: '2026-06-07' }),
+      gasto({ id: 'd', centavosArs: 9999, sectorId: 'ocio', fecha: '2025-12-01' }),
+    ];
+    const resultado = gastadoPorSectorEnAnio(gastos, '2026');
+    expect(resultado.get('ocio')).toBe(1500);
+    expect(resultado.get('vacaciones')).toBe(2000);
+  });
+
+  it('no filtra por fuente: un gasto pagado con ahorro también cuenta para su sector', () => {
+    const gastos = [gasto({ centavosArs: 700, sectorId: 'ocio', fecha: '2026-03-01', fuente: 'ahorro' })];
+    const resultado = gastadoPorSectorEnAnio(gastos, '2026');
+    expect(resultado.get('ocio')).toBe(700);
+  });
+
+  it('devuelve un Map vacío sin gastos ese año', () => {
+    expect(gastadoPorSectorEnAnio([], '2026').size).toBe(0);
+  });
+});
+
+describe('mandadoAAhorroEnAnio', () => {
+  it('suma los aportes con origen "ingresos" fechados en el año, ignorando otros años y otros orígenes', () => {
+    const movimientos = [
+      movimiento({ id: 'm1', centavosArs: 5000, fecha: '2026-02-01', origen: 'ingresos' }),
+      movimiento({ id: 'm2', centavosArs: 3000, fecha: '2026-09-15', origen: 'ingresos' }),
+      movimiento({ id: 'm3', centavosArs: 1000, fecha: '2025-12-31', origen: 'ingresos' }),
+      movimiento({ id: 'm4', centavosArs: 2000, fecha: '2026-05-01', origen: 'externo' }),
+      movimiento({ id: 'm5', centavosArs: -500, fecha: '2026-05-01', origen: null, destino: 'disponible' }),
+    ];
+    expect(mandadoAAhorroEnAnio(movimientos, '2026')).toBe(8000);
+  });
+
+  it('devuelve 0 sin movimientos ese año', () => {
+    expect(mandadoAAhorroEnAnio([], '2026')).toBe(0);
+  });
+});
+
+describe('tablaSectorPorMes', () => {
+  it('devuelve un array de 12 posiciones (enero..diciembre) por sector', () => {
+    const gastos = [
+      gasto({ id: 'a', centavosArs: 1000, sectorId: 'ocio', fecha: '2026-01-10' }),
+      gasto({ id: 'b', centavosArs: 500, sectorId: 'ocio', fecha: '2026-03-10' }),
+      gasto({ id: 'c', centavosArs: 2000, sectorId: 'vacaciones', fecha: '2026-12-01' }),
+    ];
+    const tabla = tablaSectorPorMes(gastos, '2026');
+
+    expect(tabla.get('ocio')).toEqual([1000, 0, 500, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(tabla.get('vacaciones')).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2000]);
+  });
+
+  it('devuelve un Map vacío sin gastos ese año', () => {
+    expect(tablaSectorPorMes([], '2026').size).toBe(0);
+  });
+});
+
+describe('mandadoAAhorroEnMes (ahora exportada)', () => {
+  it('sigue devolviendo lo mismo que antes: aportes con origen ingresos de ese mes exacto', () => {
+    const movimientos = [
+      movimiento({ id: 'm1', centavosArs: 4000, fecha: '2026-06-10', origen: 'ingresos' }),
+      movimiento({ id: 'm2', centavosArs: 1000, fecha: '2026-05-10', origen: 'ingresos' }),
+    ];
+    expect(mandadoAAhorroEnMes(movimientos, '2026-06')).toBe(4000);
   });
 });

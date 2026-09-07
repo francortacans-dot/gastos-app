@@ -87,7 +87,7 @@ interface ParametrosResumenMes {
 }
 
 /** Suma de los aportes con origen 'ingresos' (salidos del presupuesto) fechados exactamente en `mes`. */
-function mandadoAAhorroEnMes(movimientos: SavingMovement[], mes: MonthKey): number {
+export function mandadoAAhorroEnMes(movimientos: SavingMovement[], mes: MonthKey): number {
   return ahorradoHasta(movimientos, mes, 'ingresos') - ahorradoHasta(movimientos, mesAnterior(mes), 'ingresos');
 }
 
@@ -134,4 +134,43 @@ export function calcularResumenMes(params: ParametrosResumenMes): ResumenMes {
   const disponible = presupuestoDelMes + acumuladoPrevio - gastado - mandadoAhorro + retiradoAhorro;
 
   return { presupuestoDelMes, acumuladoPrevio, gastado, disponible };
+}
+
+export type YearKey = string;
+
+function anioDeFecha(fechaIso: string): YearKey {
+  return fechaIso.slice(0, 4);
+}
+
+/** Igual que gastadoPorSector, pero sumando los 12 meses del año en vez de un mes. */
+export function gastadoPorSectorEnAnio(gastos: Expense[], anio: YearKey): Map<string, number> {
+  const resultado = new Map<string, number>();
+  for (const g of gastos) {
+    if (anioDeFecha(g.fecha) !== anio) continue;
+    const clave = g.sectorId ?? SIN_SECTOR;
+    resultado.set(clave, (resultado.get(clave) ?? 0) + g.centavosArs);
+  }
+  return resultado;
+}
+
+/** Suma de los aportes con origen 'ingresos' fechados en `anio` (mismo criterio que mandadoAAhorroEnMes, para el año completo). */
+export function mandadoAAhorroEnAnio(movimientos: SavingMovement[], anio: YearKey): number {
+  return movimientos
+    .filter((m) => m.centavosArs > 0 && origenEfectivo(m) === 'ingresos' && anioDeFecha(m.fecha) === anio)
+    .reduce((acc, m) => acc + m.centavosArs, 0);
+}
+
+/** Gasto por sector, mes a mes, para un año completo: sectorId (o SIN_SECTOR) -> array de 12 números (enero..diciembre), en centavos ARS. */
+export function tablaSectorPorMes(gastos: Expense[], anio: YearKey): Map<string, number[]> {
+  const resultado = new Map<string, number[]>();
+  for (let mesNum = 1; mesNum <= 12; mesNum++) {
+    const mes = `${anio}-${String(mesNum).padStart(2, '0')}`;
+    const porSector = gastadoPorSector(gastos, mes);
+    for (const [sectorId, monto] of porSector) {
+      const fila = resultado.get(sectorId) ?? new Array(12).fill(0);
+      fila[mesNum - 1] = monto;
+      resultado.set(sectorId, fila);
+    }
+  }
+  return resultado;
 }
