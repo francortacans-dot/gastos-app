@@ -22,6 +22,8 @@ import { generarXlsxPortfolio } from '../../src/domain/export-xlsx';
 import { compartirXlsx } from '../../src/services/compartir-xlsx';
 import { parsearCsvInversiones } from '../../src/domain/import-csv-inversiones';
 import { seleccionarArchivoCsv } from '../../src/services/importar-csv';
+import { parsearXlsxInversiones } from '../../src/domain/import-xlsx-inversiones';
+import { seleccionarArchivoXlsx } from '../../src/services/importar-xlsx';
 import { importarInversiones } from '../../src/repos/importar-inversiones';
 
 export default function Inversiones() {
@@ -130,6 +132,31 @@ export default function Inversiones() {
     ]);
   }
 
+  async function procesarImportacion(
+    resultadoParseo: { posiciones: ReturnType<typeof parsearCsvInversiones>['posiciones']; errores: ReturnType<typeof parsearCsvInversiones>['errores'] },
+    nombreFormato: string
+  ) {
+    const { posiciones, errores: erroresParseo } = resultadoParseo;
+
+    if (posiciones.length === 0 && erroresParseo.length > 0) {
+      setError(`No se pudo importar: ${erroresParseo[0].motivo}`);
+      return;
+    }
+
+    const { creadas, errores: erroresImportacion } = await importarInversiones(
+      repos,
+      posiciones,
+      cotizacion?.venta ?? null
+    );
+
+    const totalErrores = erroresParseo.length + erroresImportacion.length;
+    if (totalErrores === 0) {
+      setError(null);
+    } else {
+      setError(`${creadas.length} posiciones importadas, ${totalErrores} con errores (fila ${erroresParseo[0]?.fila ?? '?'}: revisá el ${nombreFormato})`);
+    }
+  }
+
   async function importarCsv() {
     if (importando) return;
     setError(null);
@@ -139,30 +166,46 @@ export default function Inversiones() {
       if (texto === null) return;
 
       const fechaHoy = new Date().toISOString().slice(0, 10);
-      const { posiciones, errores: erroresParseo } = parsearCsvInversiones(texto, fechaHoy);
-
-      if (posiciones.length === 0 && erroresParseo.length > 0) {
-        setError(`No se pudo importar: ${erroresParseo[0].motivo}`);
-        return;
-      }
-
-      const { creadas, errores: erroresImportacion } = await importarInversiones(
-        repos,
-        posiciones,
-        cotizacion?.venta ?? null
-      );
-
-      const totalErrores = erroresParseo.length + erroresImportacion.length;
-      if (totalErrores === 0) {
-        setError(null);
-      } else {
-        setError(`${creadas.length} posiciones importadas, ${totalErrores} con errores (fila ${erroresParseo[0]?.fila ?? '?'}: revisá el CSV)`);
-      }
+      await procesarImportacion(parsearCsvInversiones(texto, fechaHoy), 'CSV');
     } catch {
       setError('No se pudo importar el CSV. Probá de nuevo.');
     } finally {
       setImportando(false);
     }
+  }
+
+  async function importarXlsx() {
+    if (importando) return;
+    setError(null);
+    setImportando(true);
+    try {
+      const bytes = await seleccionarArchivoXlsx();
+      if (bytes === null) return;
+
+      const fechaHoy = new Date().toISOString().slice(0, 10);
+      await procesarImportacion(parsearXlsxInversiones(bytes, fechaHoy), 'Excel');
+    } catch {
+      setError('No se pudo importar el Excel. Probá de nuevo.');
+    } finally {
+      setImportando(false);
+    }
+  }
+
+  function elegirFormatoImportar() {
+    if (importando) return;
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Aceptar = Excel (.xlsx). Cancelar = CSV.')) {
+        importarXlsx();
+      } else {
+        importarCsv();
+      }
+      return;
+    }
+    Alert.alert('Importar posiciones', '¿En qué formato?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'CSV', onPress: importarCsv },
+      { text: 'Excel (.xlsx)', onPress: importarXlsx },
+    ]);
   }
 
   function renderPosicion({ item }: { item: Investment }) {
@@ -211,8 +254,8 @@ export default function Inversiones() {
               <Pressable onPress={elegirFormatoExportar} style={estilos.botonExportar}>
                 <Text style={estilos.textoExportar}>Exportar</Text>
               </Pressable>
-              <Pressable onPress={importarCsv} style={estilos.botonExportar} disabled={importando}>
-                <Text style={estilos.textoExportar}>{importando ? 'Importando...' : 'Importar CSV'}</Text>
+              <Pressable onPress={elegirFormatoImportar} style={estilos.botonExportar} disabled={importando}>
+                <Text style={estilos.textoExportar}>{importando ? 'Importando...' : 'Importar'}</Text>
               </Pressable>
               <View style={estilos.grupoChip}>
                 {(['ARS', 'USD'] as const).map((m) => (

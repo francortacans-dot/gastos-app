@@ -18,6 +18,7 @@ import {
   tablaSectorPorMes,
 } from '../../src/domain/budget';
 import { PieChart } from '../../src/components/pie-chart';
+import { calcularAngulos } from '../../src/components/pie-chart-math';
 import { BarChart, type BarraDato } from '../../src/components/bar-chart';
 import { SelectorFecha } from '../../src/components/selector-fecha';
 import { MoneyText } from '../../src/components/money-text';
@@ -83,6 +84,8 @@ export default function Historial() {
       .filter((p) => p.valor > 0),
     { etiqueta: 'Ahorro', valor: mandadoAAhorroEnAnio(movimientos, anioKey), color: colors.blue },
   ].filter((p) => p.valor > 0);
+  const leyendaPorciones = calcularAngulos(porciones);
+  const leyendaPorcionesAnio = calcularAngulos(porcionesAnio);
   const tablaAnio = tablaSectorPorMes(gastos, anioKey);
   const filasTabla = sectores
     .filter((s) => (tablaAnio.get(s.id) ?? []).some((v) => v > 0))
@@ -135,6 +138,7 @@ export default function Historial() {
           {porciones.length > 0 && !diaSeleccionado && (
             <View style={estilos.centrado}>
               <PieChart porciones={porciones} size={180} />
+              <Leyenda porciones={leyendaPorciones} estilos={estilos} />
             </View>
           )}
 
@@ -185,6 +189,7 @@ export default function Historial() {
           {porcionesAnio.length > 0 && (
             <View style={estilos.centrado}>
               <PieChart porciones={porcionesAnio} size={200} />
+              <Leyenda porciones={leyendaPorcionesAnio} estilos={estilos} />
             </View>
           )}
 
@@ -223,6 +228,26 @@ export default function Historial() {
   );
 }
 
+function Leyenda({
+  porciones,
+  estilos,
+}: {
+  porciones: ReturnType<typeof calcularAngulos>;
+  estilos: ReturnType<typeof crearEstilos>;
+}) {
+  return (
+    <View style={estilos.leyenda}>
+      {porciones.map((p) => (
+        <View key={p.etiqueta} style={estilos.filaLeyenda}>
+          <View style={[estilos.puntoLeyenda, { backgroundColor: p.color }]} />
+          <Text style={estilos.textoLeyenda}>{p.etiqueta}</Text>
+          <Text style={estilos.porcentajeLeyenda}>{p.porcentaje.toFixed(0)}%</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function crearEstilos(colors: Colors) {
   const sombra = { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as const;
 
@@ -240,6 +265,11 @@ function crearEstilos(colors: Colors) {
     tarjetaTendencia: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, ...sombra },
     tituloTendencia: { color: colors.text2, fontWeight: '700', fontSize: 14, marginBottom: spacing.sm },
     centrado: { alignItems: 'center', marginBottom: spacing.md },
+    leyenda: { marginTop: spacing.sm, alignSelf: 'stretch' },
+    filaLeyenda: { flexDirection: 'row', alignItems: 'center', paddingVertical: 3, gap: spacing.xs },
+    puntoLeyenda: { width: 10, height: 10, borderRadius: 5 },
+    textoLeyenda: { flex: 1, color: colors.text2, fontSize: 13 },
+    porcentajeLeyenda: { color: colors.text1, fontWeight: '700', fontSize: 13 },
     filaTituloLista: { marginBottom: spacing.sm },
     limpiarFiltro: { color: colors.primary, fontWeight: '600', fontSize: 13 },
     filaGasto: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.xs, gap: spacing.xs },
