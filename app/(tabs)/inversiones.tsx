@@ -48,6 +48,7 @@ export default function Inversiones() {
   const [monedaEdicion, setMonedaEdicion] = useState<'ARS' | 'USD'>('ARS');
   const [error, setError] = useState<string | null>(null);
   const [importando, setImportando] = useState(false);
+  const [monedaImportacion, setMonedaImportacion] = useState<'auto' | 'ARS' | 'USD'>('auto');
 
   const abiertas = inversiones.filter((i) => i.status === 'OPEN').sort((a, b) => b.fecha.localeCompare(a.fecha));
   const costoAbierto = costoTotalAbierto(inversiones);
@@ -136,7 +137,11 @@ export default function Inversiones() {
     resultadoParseo: { posiciones: ReturnType<typeof parsearCsvInversiones>['posiciones']; errores: ReturnType<typeof parsearCsvInversiones>['errores'] },
     nombreFormato: string
   ) {
-    const { posiciones, errores: erroresParseo } = resultadoParseo;
+    const posiciones =
+      monedaImportacion === 'auto'
+        ? resultadoParseo.posiciones
+        : resultadoParseo.posiciones.map((p) => ({ ...p, monedaOriginal: monedaImportacion }));
+    const { errores: erroresParseo } = resultadoParseo;
 
     if (posiciones.length === 0 && erroresParseo.length > 0) {
       setError(`No se pudo importar: ${erroresParseo[0].motivo}`);
@@ -270,6 +275,23 @@ export default function Inversiones() {
               </View>
             </View>
 
+            <View style={estilos.filaMonedaImportacion}>
+              <Text style={estilos.etiquetaMonedaImportacion}>Al importar, moneda:</Text>
+              <View style={estilos.grupoChip}>
+                {(['auto', 'ARS', 'USD'] as const).map((m) => (
+                  <Pressable
+                    key={m}
+                    onPress={() => setMonedaImportacion(m)}
+                    style={[estilos.chip, monedaImportacion === m && estilos.chipActivo]}
+                  >
+                    <Text style={[estilos.textoChip, monedaImportacion === m && estilos.textoChipActivo]}>
+                      {m === 'auto' ? 'Del archivo' : m}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
             <Toast texto={error} tipo="error" colors={colors} />
 
             <View style={estilos.tarjetaResumen}>
@@ -373,6 +395,8 @@ function crearEstilos(colors: Colors) {
     contenedor: { flex: 1, backgroundColor: colors.bg },
     lista: { padding: spacing.md, paddingBottom: spacing.xxl * 2 },
     filaMoneda: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+    filaMonedaImportacion: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md },
+    etiquetaMonedaImportacion: { color: colors.text3, fontSize: 12 },
     botonExportar: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
     textoExportar: { color: colors.blue, fontWeight: '600' },
     grupoChip: { flexDirection: 'row', backgroundColor: colors.surface2, borderRadius: 20, padding: 3 },
