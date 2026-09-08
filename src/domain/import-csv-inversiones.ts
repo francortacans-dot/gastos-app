@@ -23,22 +23,21 @@ const COLUMNAS_REQUERIDAS = ['ticker', 'nominales', 'precio', 'moneda'] as const
 const FORMATO_FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
- * Parsea un CSV con columnas ticker,nominales,precio,moneda,rubro,fecha
- * (rubro y fecha son opcionales; fecha vacía usa `fechaHoy`). Las filas
- * inválidas se reportan en `errores` (con el número de fila, contando el
- * encabezado como fila 1) sin interrumpir el resto de la importación.
+ * Parsea filas ya separadas en celdas (encabezado en `filas[0]`) con las
+ * columnas ticker,nominales,precio,moneda,rubro,fecha (rubro y fecha son
+ * opcionales; fecha vacía usa `fechaHoy`). Las filas inválidas se reportan
+ * en `errores` (con el número de fila, contando el encabezado como fila 1)
+ * sin interrumpir el resto de la importación.
+ *
+ * Compartido por `parsearCsvInversiones` (filas de un .csv) y por el
+ * importador de .xlsx (filas ya remapeadas al layout genérico).
  */
-export function parsearCsvInversiones(csv: string, fechaHoy: string): ResultadoParseoCsv {
-  const lineas = csv
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-
-  if (lineas.length === 0) {
+export function parsearFilasInversion(filas: string[][], fechaHoy: string): ResultadoParseoCsv {
+  if (filas.length === 0) {
     return { posiciones: [], errores: [] };
   }
 
-  const encabezado = lineas[0].split(',').map((c) => c.trim().toLowerCase());
+  const encabezado = filas[0].map((c) => c.trim().toLowerCase());
   const indiceDe = (nombre: string) => encabezado.indexOf(nombre);
 
   const columnasFaltantes = COLUMNAS_REQUERIDAS.filter((c) => indiceDe(c) === -1);
@@ -59,9 +58,10 @@ export function parsearCsvInversiones(csv: string, fechaHoy: string): ResultadoP
   const posiciones: PosicionImportada[] = [];
   const errores: ErrorFilaImportacion[] = [];
 
-  for (let i = 1; i < lineas.length; i++) {
+  for (let i = 1; i < filas.length; i++) {
     const fila = i + 1;
-    const columnas = lineas[i].split(',').map((c) => c.trim());
+    const columnas = filas[i].map((c) => c.trim());
+    if (columnas.every((c) => c.length === 0)) continue;
 
     const ticker = columnas[idxTicker]?.toUpperCase();
     const nominales = Number(columnas[idxNominales]?.replace(',', '.'));
@@ -96,4 +96,18 @@ export function parsearCsvInversiones(csv: string, fechaHoy: string): ResultadoP
   }
 
   return { posiciones, errores };
+}
+
+/**
+ * Parsea un CSV con columnas ticker,nominales,precio,moneda,rubro,fecha.
+ * Ver `parsearFilasInversion` para el detalle de las reglas de validación.
+ */
+export function parsearCsvInversiones(csv: string, fechaHoy: string): ResultadoParseoCsv {
+  const lineas = csv
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  const filas = lineas.map((l) => l.split(','));
+  return parsearFilasInversion(filas, fechaHoy);
 }
