@@ -18,6 +18,8 @@ import { spacing } from '../../src/theme/spacing';
 import type { Investment, InvestmentSale } from '../../src/domain/types';
 import { generarCsvPortfolio } from '../../src/domain/export-csv';
 import { compartirCsv } from '../../src/services/compartir-csv';
+import { generarXlsxPortfolio } from '../../src/domain/export-xlsx';
+import { compartirXlsx } from '../../src/services/compartir-xlsx';
 import { parsearCsvInversiones } from '../../src/domain/import-csv-inversiones';
 import { seleccionarArchivoCsv } from '../../src/services/importar-csv';
 import { importarInversiones } from '../../src/repos/importar-inversiones';
@@ -92,7 +94,7 @@ export default function Inversiones() {
     ]);
   }
 
-  async function exportar() {
+  async function exportarCsv() {
     setError(null);
     try {
       const csv = generarCsvPortfolio(inversiones, brokerCash);
@@ -100,6 +102,32 @@ export default function Inversiones() {
     } catch {
       setError('No se pudo exportar el CSV. Probá de nuevo.');
     }
+  }
+
+  async function exportarXlsx() {
+    setError(null);
+    try {
+      const base64 = generarXlsxPortfolio(inversiones, brokerCash);
+      await compartirXlsx(base64);
+    } catch {
+      setError('No se pudo exportar el Excel. Probá de nuevo.');
+    }
+  }
+
+  function elegirFormatoExportar() {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Aceptar = Excel (.xlsx). Cancelar = CSV.')) {
+        exportarXlsx();
+      } else {
+        exportarCsv();
+      }
+      return;
+    }
+    Alert.alert('Exportar portfolio', '¿En qué formato?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'CSV', onPress: exportarCsv },
+      { text: 'Excel (.xlsx)', onPress: exportarXlsx },
+    ]);
   }
 
   async function importarCsv() {
@@ -180,7 +208,7 @@ export default function Inversiones() {
         ListHeaderComponent={
           <View>
             <View style={estilos.filaMoneda}>
-              <Pressable onPress={exportar} style={estilos.botonExportar}>
+              <Pressable onPress={elegirFormatoExportar} style={estilos.botonExportar}>
                 <Text style={estilos.textoExportar}>Exportar</Text>
               </Pressable>
               <Pressable onPress={importarCsv} style={estilos.botonExportar} disabled={importando}>
