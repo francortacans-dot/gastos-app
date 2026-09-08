@@ -11,6 +11,7 @@ import { totalAhorrado } from '../src/domain/budget';
 import { pagarGasto } from '../src/repos/pagar-gasto';
 import { editarGasto } from '../src/repos/editar-gasto';
 import { eliminarGasto } from '../src/repos/eliminar-gasto';
+import { sugerirSectorIdPorLugar } from '../src/domain/sector-por-lugar';
 import { useColors } from '../src/theme/theme-context';
 import type { Colors } from '../src/theme/palettes';
 import { spacing } from '../src/theme/spacing';
@@ -155,7 +156,16 @@ export default function GastoNuevo() {
         </View>
 
         <Text style={estilos.etiquetaCampo}>Lugar</Text>
-        <TextInput value={lugar} onChangeText={setLugar} style={estilos.inputTexto} placeholder="Ej: Supermercado" />
+        <TextInput
+          value={lugar}
+          onChangeText={(t) => {
+            setLugar(t);
+            const sectorSugerido = sugerirSectorIdPorLugar(gastos, t);
+            if (sectorSugerido) setSectorId(sectorSugerido);
+          }}
+          style={estilos.inputTexto}
+          placeholder="Ej: Supermercado"
+        />
 
         <Text style={estilos.etiquetaCampo}>Descripción</Text>
         <TextInput value={descripcion} onChangeText={setDescripcion} style={estilos.inputTexto} placeholder="Ej: Compra del mes" />
